@@ -1,0 +1,28 @@
+[project]
+name = "liblocalization"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+requires-python = ">=3.10, <3.13"
+dynamic = ["dependencies"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+known_first_party = ["liblocalization", "libracecar", "_liblocalization_cpp"]
+
+[tool.poetry.dependencies]
+libracecar = { git = "https://github.com/rss2025-4/libracecar.git" }
+# libracecar = { path = "/home/alan/6.4200/libracecar/", develop = true }
+liblocalization-cpp = { path = "./cpp" }
+jax = { extras = ["cuda12"], version = "^0.5.3" }
+
+[tool.poetry.group.dev.dependencies]
+setuptools = "^78.1.0"
+wheel = "^0.45.1"
+pybind11 = "^2.13.6"
+build = "^1.2.2.post1"
