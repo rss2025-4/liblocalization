@@ -1,10 +1,16 @@
+import os
+import pickle
+import sys
+import threading
 import time
+import traceback
 from dataclasses import dataclass
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 import tf2_ros
+from jax import tree_util as jtu
 from nav_msgs.msg import OccupancyGrid
 from rclpy.node import Node
 from rclpy.time import Time
@@ -15,18 +21,22 @@ from visualization_msgs.msg import Marker
 
 from libracecar.plot import plot_ctx
 from libracecar.specs import position
+from libracecar.utils import PropagatingThread, ensure_not_weak_typed
 
 from .core import (
     compute_localization,
-    lidar_obs,
-    localization_params,
     localization_state,
+    main_loop,
+    request_t,
 )
 from .map import Grid, precompute
+from .ros import lidar_obs
 
 np.set_printoptions(precision=3, suppress=True)
 
 jax.config.update("jax_platform_name", "cpu")
+
+jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")
 
 
 @dataclass
@@ -46,8 +56,8 @@ class Localization(Node):
         self.map_subscriber = self.create_subscription(
             OccupancyGrid, self.cfg.map_topic, self.map_callback, 1
         )
-        self.tmp_map = None
-        self.state = None
+        self.map = None
+        self.handler: main_loop | None = None
 
         self.tfBuffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tfBuffer, self)
@@ -63,7 +73,7 @@ class Localization(Node):
         self._i = 0
 
     def lidar_callback(self, msg: LaserScan):
-        if self._i % 20 == 0:
+        if self._i % 50 == 0:
             self.tick(msg)
         self._i += 1
 
@@ -72,8 +82,8 @@ class Localization(Node):
 
         grid = Grid.create(map_msg)
         _start = time.time()
-        map = precompute(grid)
-        self.tmp_map = map
+        self.map = precompute(grid)
+        jax.block_until_ready(self.map)
         print(f"elapsed (precompute): {time.time() - _start:.5f}")
 
     def _sim_current_pos_meters(self):
@@ -88,56 +98,50 @@ class Localization(Node):
         )
 
     def initialize(self, msg: LaserScan):
-        assert self.tmp_map is not None
-        obs_pixels = lidar_obs.from_msg_meters(msg, self.tmp_map.grid.res)
+        assert self.map is not None
 
-        state_ex = localization_state.init(self.tmp_map, position.zero())
-        localization_params(state_ex, obs_pixels)
+        obs_pixels = lidar_obs.from_msg_meters(msg, self.map.grid.res)
 
-        comp = compute_localization.lower(
-            localization_params(state_ex, obs_pixels)
-        ).compile()
-        print("cost_analysis:", comp.cost_analysis())
-
-        self.state = localization_state.init(
-            self.tmp_map, self.tmp_map.grid.to_pixels(self._sim_current_pos_meters())
+        self.handler = main_loop(
+            request_t(laser=obs_pixels, true_pos_pixels=position.zero())
         )
-        self.tmp_map = None
+
+        self.handler_worker = self.handler.jit(self.map, position.zero())
+
+        self.map.grid.to_pixels(self._sim_current_pos_meters())
+
+        start_pos = self.map.grid.to_pixels(self._sim_current_pos_meters())
+
+        PropagatingThread(
+            target=self.handler_worker, args=(self.map, start_pos)
+        ).start()
 
     def tick(self, msg: LaserScan):
-        if self.state is None and self.tmp_map is None:
+        if self.map is None:
             return
 
-        if self.tmp_map is not None:
+        if self.handler is None:
             self.initialize(msg)
+            return
 
-        assert self.state is not None
+        obs_pixels = lidar_obs.from_msg_meters(msg, self.map.grid.res)
 
-        obs_pixels = lidar_obs.from_msg_meters(msg, self.state.map.grid.res)
-
-        true_pos = self.state.map.grid.to_pixels(self._sim_current_pos_meters())
-
-        state = self.state
-        if (
-            jnp.any(jnp.isnan(state.state.mean))
-            or jnp.linalg.norm(state.state.mean - true_pos.as_arr()) > 100
-        ):
-            print(colored("too far; resetting", "red"))
-
-            state = localization_state.init(
-                self.state.map,
-                self.state.map.grid.to_pixels(self._sim_current_pos_meters()),
-            )
+        truth = self.map.grid.to_pixels(self._sim_current_pos_meters())
 
         _start = time.time()
-        res = compute_localization(localization_params(state, obs_pixels))
-        res.state.state.mean.block_until_ready()
+        res = self.handler.process(request_t(obs_pixels, truth))
+        jax.block_until_ready(res)
         print(f"elapsed: {time.time() - _start:.5f}")
 
-        # print("res.plot", res.plot.idx, res.plot.points[:20])
-        print("hyperparams:", res.state.state.a_arr_mean, res.state.state.sigma_mean)
+        # print(res.state.stats.counts_using_truth[10:20, 10:20])
 
-        self.state = res.state
+        # if self._i % 200 == 0:
+        #     with open(
+        #         "/home/dockeruser/racecar_ws/src/liblocalization/stats.pkl", "wb"
+        #     ) as file:
+        #         pickle.dump(res.state.stats, file)
+
+        # self.state = res.state
         self.visualize(res.plot)
 
     def visualize(self, ctx: plot_ctx):
@@ -148,53 +152,3 @@ class Localization(Node):
         m.scale.y = 0.05
         ctx.execute(m)
         self.visualization_pub.publish(m)
-
-
-# @jit
-# # @checkify_simple
-# def testfn(
-#     map: precomputed_map,
-#     pos: position,
-#     obs: batched[lidar_obs],
-#     rng_seed=random.PRNGKey(0),
-# ):
-#     with numpyro.handlers.seed(rng_seed=rng_seed):
-
-#         # def _obs_at_pos(obs: lidar_obs):
-#         #     ray_ang = pos.rot.mul_unit(obs.angle)
-#         #     ans = trace_ray(map, pos.tran, ray_ang)
-#         #     return jnp.array([ans.dist, obs.dist, ans.distance_to_nearest])
-
-#         # obs_at_pos = obs.map(_obs_at_pos).unflatten()
-#         # debug_print("obs_at_pos", obs_at_pos)
-
-#         ctx = plot_ctx.create(100)
-
-#         ctx += pos.plot_as_seg(plot_style(color=(0, 0, 1)))
-
-#         res = map.grid.res
-#         prior = noisy_position.from_mean_cov(
-#             pos.as_arr(), jnp.diag(jnp.array([0.2 / res, 0.2 / res, math.pi / 8]) ** 2)
-#         )
-#         prior = noisy_position(prior.sample().as_arr(), prior.scale_tril)
-
-#         # angles_ = jnp.linspace(0.0, 2 * math.pi, 65)[:-1]
-#         # angles = batched.create(angles_, angles_.shape)
-#         # # angles = batched.create(jnp.array(0.5))
-#         # lidar_points = angles.map(
-#         #     lambda angle: trace_ray(
-#         #         map,
-#         #         vec.create(pos.coord[0], pos.coord[1]),
-#         #         unitvec.from_angle(angle),
-#         #     ),
-#         #     # sequential=True,
-#         # )
-#         # ctx += lidar_points.map(lambda x: x.plot())
-
-#         ctx += prior.plot(20, plot_style(color=(1, 0, 0)))
-#         post = compute_posterior(map, prior, obs, pos)
-#         debug_print("losses", post.losses)
-#         ctx += post.posterior.plot(20, plot_style(color=(0, 1, 0)))
-
-#         ctx = map.grid.plot_from_pixels_vec(ctx)
-#         return ctx

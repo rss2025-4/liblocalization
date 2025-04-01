@@ -16,12 +16,14 @@ from libracecar.plot import plot_ctx, plot_point, plot_style, plotable, plotmeth
 from libracecar.specs import position
 from libracecar.utils import (
     bval,
+    ensure_not_weak_typed,
     flike,
     fpair,
     fval,
     ival,
     jit,
     pformat_repr,
+    round_clip,
     tree_at_,
     tree_select,
 )
@@ -126,8 +128,13 @@ class precomputed_map(eqx.Module):
 
     __repr__ = pformat_repr
 
+    @property
+    def res(self):
+        return self.grid.res
+
 
 def _distance_2d_cb(w: int, h: int, data: Float[Array, "hw"]):
+    print("_distance_2d_cb: callback")
     data_np = np.array(data, np.float64)
     return _distance_2d(data_np, w, h, 1.0, 0.0)
 
@@ -211,9 +218,11 @@ def precompute(grid: Grid) -> precomputed_map:
     distance_2d_res = distance_2d(grid)
     ans = tree_at_(lambda x: x.unflatten().dist, ans, distance_2d_res)
 
-    return precomputed_map(
-        grid=grid,
-        points=ans,
+    return ensure_not_weak_typed(
+        precomputed_map(
+            grid=grid,
+            points=ans,
+        )
     )
 
 
@@ -238,6 +247,12 @@ class _trace_ray_res(eqx.Module):
         return tree_select(self.distance_to_nearest > 2.0, on_false=ctx1, on_true=ctx2)
 
 
+class _loop_state(eqx.Module):
+    coord: vec
+    data: precomputed_point
+    distance_to_nearest: fval
+
+
 def trace_ray(
     map: precomputed_map, coord: vec, angle: unitvec, eps: flike = 1.0
 ) -> _trace_ray_res:
@@ -248,43 +263,32 @@ def trace_ray(
     coord_s = lax.stop_gradient(coord)
     angle_s = lax.stop_gradient(angle)
 
-    class loop_state(eqx.Module):
-        coord: vec
-        data: precomputed_point
-        distance_to_nearest: fval
+    def _create_state(coord: vec):
+        i, j = coord
+        r_i = round_clip(i, 0, map.grid.w)
+        r_j = round_clip(j, 0, map.grid.h)
+        r_err = jnp.linalg.norm(jnp.array([i - r_i, j - r_j]))
 
-        def __init__(self, coord: vec):
-            self.coord = coord
-            i, j = coord
-            r_i = jnp.clip(jnp.round(i).astype(np.int32), 0, map.grid.w - 1)
-            r_j = jnp.clip(jnp.round(j).astype(np.int32), 0, map.grid.h - 1)
-            r_err = jnp.linalg.norm(jnp.array([i - r_i, j - r_j]))
+        data = map.points[r_i, r_j].unwrap()
+        return _loop_state(
+            coord=coord,
+            data=data,
+            distance_to_nearest=jnp.maximum(data.dist - r_err - eps, 0),
+        )
 
-            self.data = map.points[r_i, r_j].unwrap()
-            self.distance_to_nearest = jnp.maximum(self.data.dist - r_err - eps, 0)
-            # self.distance_to_nearest = self.data.dist
+    def step(s: _loop_state):
+        return _create_state(s.coord + angle_s * s.distance_to_nearest)
 
-        def step(self):
-            return loop_state(
-                self.coord + angle_s * self.distance_to_nearest,
-                # tree_select(
-                #     self.distance_to_nearest > eps,
-                #     on_true=self.coord + angle_s * self.distance_to_nearest,
-                #     on_false=self.coord,
-                # ),
-            )
-
-    # loop_res = lax.while_loop(
-    #     init_val=loop_state(coord_s),
-    #     cond_fun=lambda x: x.distance_to_nearest > eps,
-    #     body_fun=loop_state.step,
+    # loop_res, _ = lax.scan(
+    #     lambda c, _: (step(c), None),
+    #     init=_create_state(coord_s),
+    #     xs=None,
+    #     length=16,
     # )
-    loop_res, _ = lax.scan(
-        lambda c, _: (loop_state.step(c), None),
-        init=loop_state(coord_s),
-        xs=None,
-        length=16,
-    )
+
+    loop_res = _create_state(coord_s)
+    for _ in range(16):
+        loop_res = step(loop_res)
 
     ans_s = loop_res.coord
     line_ang_s = loop_res.data.angle

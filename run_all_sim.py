@@ -13,20 +13,20 @@ def main():
 
     mapdir = Path(__file__).parent / "maps"
 
-    # map = mapdir / "test_map.yaml"
-    map = "/home/alan/6.4200/racecar_simulator/maps/stata_basement.yaml"
+    map = mapdir / "test_map.yaml"
+    # map = "/home/alan/6.4200/racecar_simulator/maps/stata_basement.yaml"
 
     procs = proc_manager.new()
 
-    procs.popen(
-        ["rviz2"],
-        # env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
-    )
+    # procs.popen(
+    #     ["rviz2"],
+    #     # env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
+    # )
 
     # procs.ros_node_subproc(Localization, localization_config())
     procs.ros_node_thread(Localization, localization_config())
 
-    time.sleep(1.0)
+    time.sleep(2.0)
 
     procs.ros_launch("racecar_simulator", "simulate.launch.xml", f"map:={map}")
 
