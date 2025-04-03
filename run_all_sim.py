@@ -8,23 +8,26 @@ def main():
     import time
     from pathlib import Path
 
+    from liblocalization import ExampleSimNode, deterministic_motion_tracker
     from liblocalization.main import Localization, localization_config
     from libracecar.test_utils import proc_manager
 
     mapdir = Path(__file__).parent / "maps"
 
-    map = mapdir / "test_map.yaml"
-    # map = "/home/alan/6.4200/racecar_simulator/maps/stata_basement.yaml"
+    # map = mapdir / "test_map.yaml"
+    map = "/home/alan/6.4200/racecar_simulator/maps/stata_basement.yaml"
 
     procs = proc_manager.new()
 
-    # procs.popen(
-    #     ["rviz2"],
-    #     # env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
-    # )
+    procs.popen(
+        ["rviz2"],
+        # env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
+    )
 
     # procs.ros_node_subproc(Localization, localization_config())
-    procs.ros_node_thread(Localization, localization_config())
+    # procs.ros_node_thread(Localization, localization_config())
+    # procs.ros_node_thread(ExampleSimNode, deterministic_motion_tracker)
+    procs.ros_node_subproc(ExampleSimNode, deterministic_motion_tracker)
 
     time.sleep(2.0)
 

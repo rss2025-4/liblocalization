@@ -1,51 +1,10 @@
-import math
 import pickle
-from typing import Callable, final
 
-import equinox as eqx
-import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
-import numpyro
-import numpyro.distributions as dist
-import optax
-from jax import lax, random
-from jax import tree_util as jtu
-from jaxtyping import Array, ArrayLike, Float, Int32
 from mpl_toolkits.mplot3d import Axes3D
-from numpyro.distributions import constraints
-from sensor_msgs.msg import LaserScan
-from termcolor import colored
 
-from liblocalization.map import _trace_ray_res, precomputed_map, trace_ray
-from liblocalization.ros import lidar_obs
 from liblocalization.stats import stats_t
-from libracecar.batched import batched
-from libracecar.numpyro_utils import (
-    batched_dist,
-    batched_vmap_with_rng,
-    jit_with_seed,
-    normal_,
-    numpyro_param,
-    prng_key_,
-    vmap_seperate_seed,
-)
-from libracecar.plot import plot_ctx, plot_style, plotable
-from libracecar.specs import position
-from libracecar.utils import (
-    cast,
-    cast_unchecked_,
-    cond_,
-    debug_callback,
-    debug_print,
-    flike,
-    fval,
-    jit,
-    pformat_repr,
-    round_clip,
-    tree_at_,
-)
-from libracecar.vector import unitvec, vec
 
 
 def analyze():

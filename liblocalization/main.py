@@ -1,31 +1,22 @@
-import os
-import pickle
-import sys
-import threading
 import time
-import traceback
 from dataclasses import dataclass
 
 import jax
-import jax.numpy as jnp
 import numpy as np
 import tf2_ros
-from jax import tree_util as jtu
-from nav_msgs.msg import OccupancyGrid
+from nav_msgs.msg import OccupancyGrid, Odometry
 from rclpy.node import Node
 from rclpy.time import Time
 from sensor_msgs.msg import LaserScan
-from termcolor import colored
 from tf_transformations import euler_from_quaternion
 from visualization_msgs.msg import Marker
 
+from liblocalization.motion import deterministic_motion_tracker, twist_t
 from libracecar.plot import plot_ctx
 from libracecar.specs import position
-from libracecar.utils import PropagatingThread, ensure_not_weak_typed
+from libracecar.utils import PropagatingThread, timer
 
 from .core import (
-    compute_localization,
-    localization_state,
     main_loop,
     request_t,
 )
@@ -53,11 +44,15 @@ class Localization(Node):
 
         self.cfg = cfg
 
-        self.map_subscriber = self.create_subscription(
-            OccupancyGrid, self.cfg.map_topic, self.map_callback, 1
-        )
+        # self.map_subscriber = self.create_subscription(
+        #     OccupancyGrid, self.cfg.map_topic, self.map_callback, 1
+        # )
         self.map = None
         self.handler: main_loop | None = None
+
+        self.odom_subscriber = self.create_subscription(
+            Odometry, self.cfg.odom_topic, self.odom_callback, 1
+        )
 
         self.tfBuffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tfBuffer, self)
@@ -66,15 +61,38 @@ class Localization(Node):
 
         self.visualization_pub = self.create_publisher(Marker, "/visualization", 10)
 
-        self.lidar_sub = self.create_subscription(
-            LaserScan, "/scan", self.lidar_callback, 1
-        )
+        # self.lidar_sub = self.create_subscription(
+        #     LaserScan, "/scan", self.lidar_callback, 1
+        # )
 
         self._i = 0
 
+        self._odom_time = timer.create()
+        self.pos = None
+
+    def odom_callback(self, msg: Odometry):
+        assert False
+        if self.pos is None:
+            try:
+                self.pos = deterministic_motion_tracker(self._sim_current_pos_meters())
+            except:
+                return
+        self.pos = self.pos.step(
+            twist_t.from_ros(msg.twist.twist, self._odom_time.update())
+        )
+        ctx = plot_ctx.create(5)
+        ctx += self.pos.pos.plot_as_seg()
+        self.visualize(ctx)
+
+        # print("angular", msg.twist.twist.angular)
+        print("linear", msg.twist.twist.linear)
+
     def lidar_callback(self, msg: LaserScan):
-        if self._i % 50 == 0:
-            self.tick(msg)
+        if self._i % 5 == 0:
+            with timer() as t:
+                self.tick(msg)
+                print(f"elapsed: (tick) {t.val}")
+                print()
         self._i += 1
 
     def map_callback(self, map_msg: OccupancyGrid):
@@ -87,7 +105,7 @@ class Localization(Node):
         print(f"elapsed (precompute): {time.time() - _start:.5f}")
 
     def _sim_current_pos_meters(self):
-        t = self.tfBuffer.lookup_transform("map", "base_link", Time())
+        t = self.tfBuffer.lookup_transform("map", "laser", Time())
 
         t_rot = t.transform.rotation
         t_rot_ = euler_from_quaternion((t_rot.x, t_rot.y, t_rot.z, t_rot.w))
@@ -99,6 +117,12 @@ class Localization(Node):
 
     def initialize(self, msg: LaserScan):
         assert self.map is not None
+
+        try:
+            self._sim_current_pos_meters()
+        except Exception as e:
+            print("failed to get transform:", e)
+            return
 
         obs_pixels = lidar_obs.from_msg_meters(msg, self.map.grid.res)
 
@@ -128,10 +152,10 @@ class Localization(Node):
 
         truth = self.map.grid.to_pixels(self._sim_current_pos_meters())
 
-        _start = time.time()
-        res = self.handler.process(request_t(obs_pixels, truth))
-        jax.block_until_ready(res)
-        print(f"elapsed: {time.time() - _start:.5f}")
+        with timer() as t:
+            res = self.handler.process(request_t(obs_pixels, truth))
+            jax.block_until_ready(res)
+            print(f"elapsed: (handler.process) {t.val}")
 
         # print(res.state.stats.counts_using_truth[10:20, 10:20])
 

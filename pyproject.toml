@@ -21,6 +21,8 @@ libracecar = { git = "https://github.com/rss2025-4/libracecar.git" }
 liblocalization-cpp = { path = "./cpp" }
 
 jax = "^0.5.3"
+rosbags = "^0.10.9"
+odom-transformer = { git = "https://github.com/Alan-Chen99/odom_transformer.git" }
 
 [tool.poetry.group.gpu]
 optional = true

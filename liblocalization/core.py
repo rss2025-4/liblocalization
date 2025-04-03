@@ -1,30 +1,21 @@
 import math
-import queue
 import time
-from dataclasses import dataclass
-from functools import partial
 from queue import Queue
-from typing import Callable, final
+from typing import Callable
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
-import numpy as np
 import numpyro
 import numpyro.distributions as dist
 import optax
 from jax import lax, random
-from jax import tree_util as jtu
-from jaxtyping import Array, ArrayLike, Float
-from numpyro.distributions import TruncatedDistribution, constraints
-from sensor_msgs.msg import LaserScan
+from jaxtyping import Array, Float
+from numpyro.distributions import constraints
 from termcolor import colored
 
 from libracecar.batched import batched
 from libracecar.numpyro_utils import (
     batched_dist,
-    jit_with_seed,
-    normal_,
     numpyro_param,
     trunc_normal_,
     vmap_seperate_seed,
@@ -32,11 +23,9 @@ from libracecar.numpyro_utils import (
 from libracecar.plot import plot_ctx, plot_style, plotable
 from libracecar.specs import position
 from libracecar.utils import (
-    cast,
     cast_unchecked,
     cast_unchecked_,
     cond_,
-    debug_callback,
     debug_print,
     ensure_not_weak_typed,
     flike,
@@ -47,7 +36,6 @@ from libracecar.utils import (
     tree_at_,
     tree_to_ShapeDtypeStruct,
 )
-from libracecar.vector import unitvec
 
 from .map import _trace_ray_res, precomputed_map, trace_ray
 from .ros import lidar_obs
@@ -231,7 +219,7 @@ def compute_posterior(
     svi = numpyro.infer.SVI(
         model, guide, optimizer, loss=numpyro.infer.Trace_ELBO(num_particles=128)
     )
-    svi_result = svi.run(numpyro.prng_key(), 32, progress_bar=False)
+    svi_result = svi.run(numpyro.prng_key(), 16, progress_bar=False)
 
     params = svi_result.params
 
@@ -290,6 +278,7 @@ class localization_state(eqx.Module):
 
 class request_t(eqx.Module):
     laser: Callable[[], batched[lidar_obs]]
+    # true position of laser frame
     true_pos_pixels: position | None = None
 
 
@@ -330,7 +319,7 @@ def _compute_localization(
 
     if true_pos is not None:
         is_far = jnp.any(jnp.isnan(state.prior.mean)) | (
-            jnp.linalg.norm(state.prior.mean - true_pos.as_arr()) > 100
+            jnp.linalg.norm(state.prior.mean - true_pos.as_arr()) > 400
         )
 
         def on_too_far():
@@ -374,7 +363,7 @@ def _compute_localization(
 
     # posterior = prior
 
-    # debug_print("losses", post.losses)
+    debug_print("losses", post.losses)
     ctx += posterior.plot(20, plot_style(color=(0, 1, 0)))
 
     ctx = map.grid.plot_from_pixels_vec(ctx)

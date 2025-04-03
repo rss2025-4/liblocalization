@@ -286,6 +286,7 @@ def trace_ray(
     #     length=16,
     # )
 
+    # unrolled is faster (2025-4, Alan)
     loop_res = _create_state(coord_s)
     for _ in range(16):
         loop_res = step(loop_res)
