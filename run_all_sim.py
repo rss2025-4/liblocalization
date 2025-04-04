@@ -8,14 +8,23 @@ def main():
     import time
     from pathlib import Path
 
-    from liblocalization import ExampleSimNode, deterministic_motion_tracker
-    from liblocalization.main import Localization, localization_config
+    import jax
+
+    from liblocalization import (
+        ExampleSimNode,
+        deterministic_motion_tracker,
+        particles_model,
+    )
+    from liblocalization.controllers.particles import particles_params
     from libracecar.test_utils import proc_manager
+
+    jax.config.update("jax_platform_name", "cpu")
+    # jax.config.update("jax_enable_x64", True)
 
     mapdir = Path(__file__).parent / "maps"
 
     # map = mapdir / "test_map.yaml"
-    map = "/home/alan/6.4200/racecar_simulator/maps/stata_basement.yaml"
+    map = mapdir / "stata_basement.yaml"
 
     procs = proc_manager.new()
 
@@ -26,8 +35,8 @@ def main():
 
     # procs.ros_node_subproc(Localization, localization_config())
     # procs.ros_node_thread(Localization, localization_config())
+    procs.ros_node_thread(ExampleSimNode, particles_model(particles_params()))
     # procs.ros_node_thread(ExampleSimNode, deterministic_motion_tracker)
-    procs.ros_node_subproc(ExampleSimNode, deterministic_motion_tracker)
 
     time.sleep(2.0)
 

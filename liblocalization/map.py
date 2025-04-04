@@ -38,18 +38,62 @@ def cross_product(x: Float[Array, "2"], y: Float[Array, "2"]) -> fval:
     return x[0] * y[1] - x[1] * y[0]
 
 
-class Grid(eqx.Module):
+class GridMeta(eqx.Module):
     w: int = eqx.field(static=True)
     h: int = eqx.field(static=True)
+
+    # The map resolution [m/cell]
+    res: float = eqx.field(static=True)
 
     # https://docs.ros.org/en/noetic/api/nav_msgs/html/msg/MapMetaData.html
     # The origin of the map [m, m, rad].  This is the real-world pose of the
     # cell (0,0) in the map.
     origin_to_pixel_zero_meters: position
-    # The map resolution [m/cell]
-    res: float = eqx.field(static=True)
+
+    @jit
+    def to_pixels(self, origin_to_pos_meters: position):
+        pixel_zero_to_pos = (
+            self.origin_to_pixel_zero_meters.invert_pose() + origin_to_pos_meters
+        )
+        return position(
+            pixel_zero_to_pos.tran / self.res,
+            pixel_zero_to_pos.rot,
+        )
+
+    @jit
+    def from_pixels(self, pixel_zero_to_pos_pixels: position):
+        pixel_zero_to_pos = position(
+            pixel_zero_to_pos_pixels.tran * self.res,
+            pixel_zero_to_pos_pixels.rot,
+        )
+        origin_to_pos = self.origin_to_pixel_zero_meters + pixel_zero_to_pos
+        return origin_to_pos
+
+    @jit
+    def plot_from_pixels_vec(self, ctx: plot_ctx) -> plot_ctx:
+        def process_point(p: plot_point):
+            ans = self.from_pixels(position.create((p.x, p.y), 0.0))
+            return tree_at_(lambda p: (p.x, p.y), p, (ans.x, ans.y))
+
+        return tree_at_(lambda ctx: ctx.points, ctx, ctx.points.map(process_point))
+
+
+class Grid(eqx.Module):
+    meta: GridMeta
 
     is_obstacle: Bool[Array, "w h"]
+
+    @property
+    def w(self):
+        return self.meta.w
+
+    @property
+    def h(self):
+        return self.meta.h
+
+    @property
+    def res(self):
+        return self.meta.res
 
     @staticmethod
     def create(msg: OccupancyGrid):
@@ -67,40 +111,19 @@ class Grid(eqx.Module):
         )
         origin = (origin_p.x, origin_p.y, origin_o[2])
 
-        return Grid(
+        meta = GridMeta(
             h=h,
             w=w,
-            origin_to_pixel_zero_meters=position.create(origin[:2], origin[2]),
             res=res,
+            origin_to_pixel_zero_meters=position.create(origin[:2], origin[2]),
+        )
+        return Grid(
+            meta=meta,
             # is_obstacle=jnp.array(data.reshape(h, w).T > 0),
             is_obstacle=jnp.array(data.reshape(h, w).T != 0),
         )
 
     __repr__ = pformat_repr
-
-    def to_pixels(self, origin_to_pos_meters: position):
-        pixel_zero_to_pos = (
-            self.origin_to_pixel_zero_meters.invert_pose() + origin_to_pos_meters
-        )
-        return position(
-            pixel_zero_to_pos.tran / self.res,
-            pixel_zero_to_pos.rot,
-        )
-
-    def from_pixels(self, pixel_zero_to_pos_pixels: position):
-        pixel_zero_to_pos = position(
-            pixel_zero_to_pos_pixels.tran * self.res,
-            pixel_zero_to_pos_pixels.rot,
-        )
-        origin_to_pos = self.origin_to_pixel_zero_meters + pixel_zero_to_pos
-        return origin_to_pos
-
-    def plot_from_pixels_vec(self, ctx: plot_ctx) -> plot_ctx:
-        def process_point(p: plot_point):
-            ans = self.from_pixels(position.create((p.x, p.y), 0.0))
-            return tree_at_(lambda p: (p.x, p.y), p, (ans.x, ans.y))
-
-        return tree_at_(lambda ctx: ctx.points, ctx, ctx.points.map(process_point))
 
     def plot(self, style: plot_style = plot_style()) -> plotable:
         @plotmethod

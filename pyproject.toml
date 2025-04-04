@@ -29,6 +29,14 @@ optional = true
 [tool.poetry.group.gpu.dependencies]
 jax = { version = "^0.5.3", extras = ["cuda12"] }
 
+[tool.poetry.group.docs]
+optional = true
+[tool.poetry.group.docs.dependencies]
+sphinx = "^8"
+sphinx-autodoc-typehints = "^3"
+sphinx-rtd-theme = "^3.0.2"
+rstfmt = "^0.0.14"
+
 [tool.poetry.group.dev.dependencies]
 setuptools = "^78.1.0"
 wheel = "^0.45.1"
