@@ -61,8 +61,8 @@
 <li><a class="reference internal" href="#liblocalization.localization_params.__init__"><code class="docutils literal notranslate"><span class="pre">localization_params.__init__()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#liblocalization.deterministic_motion_tracker"><code class="docutils literal notranslate"><span class="pre">deterministic_motion_tracker</span></code></a></li>
-<li><a class="reference internal" href="#liblocalization.particles_model"><code class="docutils literal notranslate"><span class="pre">particles_model</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.deterministic_motion_tracker"><code class="docutils literal notranslate"><span class="pre">deterministic_motion_tracker()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_model"><code class="docutils literal notranslate"><span class="pre">particles_model()</span></code></a></li>
 <li><a class="reference internal" href="#liblocalization.particles_params"><code class="docutils literal notranslate"><span class="pre">particles_params</span></code></a><ul>
 <li><a class="reference internal" href="#liblocalization.particles_params.n_particles"><code class="docutils literal notranslate"><span class="pre">particles_params.n_particles</span></code></a></li>
 <li><a class="reference internal" href="#liblocalization.particles_params.__init__"><code class="docutils literal notranslate"><span class="pre">particles_params.__init__()</span></code></a></li>
@@ -143,7 +143,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="liblocalization.localization_params">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">localization_params</span></span><a class="reference internal" href="_modules/liblocalization/api.html#localization_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.localization_params" title="Link to this definition"></a></dt>
-<dd><p>localization_params(map: nav_msgs.msg._occupancy_grid.OccupancyGrid, n_laser_points: int = 100, map_frame: str = ‘map’, laser_frame: str = ‘laser’, marker_callback: Callable[[visualization_msgs.msg._marker.Marker], NoneType] = &lt;function localization_params.&lt;lambda&gt; at 0x7fef357660e0&gt;, ground_truth_callback: Callable[[], geometry_msgs.msg._transform_stamped.TransformStamped | None] = &lt;function localization_params.&lt;lambda&gt; at 0x7fef35766f80&gt;)</p>
+<dd><p>localization_params(map: nav_msgs.msg._occupancy_grid.OccupancyGrid, n_laser_points: int = 100, map_frame: str = ‘map’, laser_frame: str = ‘laser’, marker_callback: Callable[[visualization_msgs.msg._marker.Marker], NoneType] = &lt;function localization_params.&lt;lambda&gt; at 0x7f8c629c20e0&gt;, ground_truth_callback: Callable[[], geometry_msgs.msg._transform_stamped.TransformStamped | None] = &lt;function localization_params.&lt;lambda&gt; at 0x7f8c629c2f80&gt;)</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="liblocalization.localization_params.map">
 <span class="sig-name descname"><span class="pre">map</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">OccupancyGrid</span></em><a class="headerlink" href="#liblocalization.localization_params.map" title="Link to this definition"></a></dt>
@@ -188,15 +188,15 @@
 
 </dd></dl>
 
-<dl class="py class">
+<dl class="py function">
 <dt class="sig sig-object py" id="liblocalization.deterministic_motion_tracker">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">deterministic_motion_tracker</span></span><a class="reference internal" href="_modules/liblocalization/controllers/deterministic_motion.html#deterministic_motion_tracker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.deterministic_motion_tracker" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">deterministic_motion_tracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#liblocalization.LocalizationBase" title="liblocalization.api.LocalizationBase"><span class="pre">LocalizationBase</span></a></span></span><a class="reference internal" href="_modules/liblocalization/controllers/deterministic_motion.html#deterministic_motion_tracker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.deterministic_motion_tracker" title="Link to this definition"></a></dt>
 <dd><p>localization implementation that only uses motion model</p>
 </dd></dl>
 
-<dl class="py class">
+<dl class="py function">
 <dt class="sig sig-object py" id="liblocalization.particles_model">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">particles_model</span></span><a class="reference internal" href="_modules/liblocalization/controllers/particles.html#particles_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.particles_model" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">particles_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#liblocalization.particles_params" title="liblocalization.controllers.particles.particles_params"><span class="pre">particles_params</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#liblocalization.LocalizationBase" title="liblocalization.api.LocalizationBase"><span class="pre">LocalizationBase</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/liblocalization/controllers/particles.html#particles_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.particles_model" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
