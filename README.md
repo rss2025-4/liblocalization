@@ -10,8 +10,8 @@ source path/of/your/choice/bin/activate
 # latest
 pip install --upgrade git+https://github.com/rss2025-4/liblocalization.git
 # or from branch
-pip install --upgrade git+https://github.com/rss2025-4/liblocalization.gi@branch-name
+pip install --upgrade git+https://github.com/rss2025-4/liblocalization.gi@branch-xxxx
 # or from revision
-pip install --upgrade git+https://github.com/rss2025-4/liblocalization.gi@42b8eae7669f477f5ded936a5cc79ca4840a8ca1
+pip install --upgrade git+https://github.com/rss2025-4/liblocalization.gi@xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ```

@@ -12,8 +12,8 @@
 
 .. autoclass:: localization_params
 
-.. autoclass:: deterministic_motion_tracker
+.. autofunction:: deterministic_motion_tracker
 
-.. autoclass:: particles_model
+.. autofunction:: particles_model
 
 .. autoclass:: particles_params
