@@ -49,6 +49,7 @@
 <li><a class="reference internal" href="#liblocalization.LocalizationBase.lidar_callback"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.lidar_callback()</span></code></a></li>
 <li><a class="reference internal" href="#liblocalization.LocalizationBase.set_pose"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.set_pose()</span></code></a></li>
 <li><a class="reference internal" href="#liblocalization.LocalizationBase.get_pose"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.get_pose()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.get_particles"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.get_particles()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#liblocalization.localization_params"><code class="docutils literal notranslate"><span class="pre">localization_params</span></code></a><ul>
@@ -80,6 +81,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#liblocalization.examplemain"><code class="docutils literal notranslate"><span class="pre">examplemain()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.examplemain2"><code class="docutils literal notranslate"><span class="pre">examplemain2()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -148,12 +150,18 @@
 <dd><p>get the current best pose estimate.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.get_particles">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_particles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.get_particles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.get_particles" title="Link to this definition"></a></dt>
+<dd><p>get the particles as a (n, 3) array with (x, y, theta)</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="liblocalization.localization_params">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">localization_params</span></span><a class="reference internal" href="_modules/liblocalization/api.html#localization_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.localization_params" title="Link to this definition"></a></dt>
-<dd><p>localization_params(map: nav_msgs.msg._occupancy_grid.OccupancyGrid, n_laser_points: int = 100, map_frame: str = ‘map’, laser_frame: str = ‘laser’, marker_callback: Callable[[visualization_msgs.msg._marker.Marker], NoneType] = &lt;function localization_params.&lt;lambda&gt; at 0x7fabdf786830&gt;, ground_truth_callback: Callable[[], geometry_msgs.msg._transform_stamped.TransformStamped | None] = &lt;function localization_params.&lt;lambda&gt; at 0x7fabdf7875b0&gt;)</p>
+<dd><p>localization_params(map: nav_msgs.msg._occupancy_grid.OccupancyGrid, n_laser_points: int = 100, map_frame: str = ‘map’, laser_frame: str = ‘laser’, marker_callback: Callable[[visualization_msgs.msg._marker.Marker], NoneType] = &lt;function localization_params.&lt;lambda&gt; at 0x7fb34657a8c0&gt;, ground_truth_callback: Callable[[], geometry_msgs.msg._transform_stamped.TransformStamped | None] = &lt;function localization_params.&lt;lambda&gt; at 0x7fb34657b640&gt;)</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="liblocalization.localization_params.map">
 <span class="sig-name descname"><span class="pre">map</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">OccupancyGrid</span></em><a class="headerlink" href="#liblocalization.localization_params.map" title="Link to this definition"></a></dt>
@@ -276,6 +284,12 @@ will be used to implicitly declare parameters on the node during creation.</p></
 <dt class="sig sig-object py" id="liblocalization.examplemain">
 <span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">examplemain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/liblocalization/api_example.html#examplemain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.examplemain" title="Link to this definition"></a></dt>
 <dd><p>examle (deterministic_motion_tracker)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="liblocalization.examplemain2">
+<span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">examplemain2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/liblocalization/api_example.html#examplemain2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.examplemain2" title="Link to this definition"></a></dt>
+<dd><p>examle (particles_model)</p>
 </dd></dl>
 
 </section>

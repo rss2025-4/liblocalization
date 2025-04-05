@@ -137,6 +137,10 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">get_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ans</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">split_tuple</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ans</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">set_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">position</span><span class="p">]):</span>
         <span class="n">p</span> <span class="o">=</span> <span class="n">pose</span><span class="p">()</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_seed</span><span class="p">()</span>
@@ -191,6 +195,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span> <span class="o">=</span> <span class="n">jax_jit_dispatcher</span><span class="p">(</span>
             <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get_pose</span><span class="p">),</span>
+            <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get_particles</span><span class="p">),</span>
             <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">set_pose</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_position_ex</span><span class="p">()),</span>
             <span class="n">dispatch_spec</span><span class="p">(</span>
                 <span class="n">state</span><span class="o">.</span><span class="n">twist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_twist_ex</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot_ground_truth</span><span class="p">()</span>
@@ -213,6 +218,9 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get_pose</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">batched</span><span class="p">[</span><span class="n">position</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get_particles</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_set_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">set_pose</span><span class="p">,</span> <span class="n">pose</span><span class="p">)</span>
