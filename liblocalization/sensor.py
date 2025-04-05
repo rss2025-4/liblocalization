@@ -22,15 +22,20 @@ d_max: float = 10.0
 
 
 def ray_model(ray: _trace_ray_res, res: float) -> dist.Distribution:
-    # this in meters!!!
-    d = lax.select(
+    """
+    contain sensor model parameters (see source).
+
+    this functions is in METERS
+    """
+    d_pixels = lax.select(
         ray.distance_to_nearest < 0.2,
         on_true=ray.dist,
         on_false=lax.stop_gradient(ray.dist),
     )
-    d *= res
+    d = d_pixels * res
     d = jnp.clip(d, 0.0, d_max)
 
+    # sensor is modeled as a mixture of theses distributions
     parts: list[tuple[dist.Distribution, flike]] = [
         (trunc_normal_(d, 0.2, 0.0, d_max), 1.0),
         (dist.Delta(d_max), d / d_max + jnp.maximum(0.0, ((d / d_max) - 0.9) * 20)),

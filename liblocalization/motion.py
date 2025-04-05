@@ -48,6 +48,7 @@ def deterministic_position(twist: twist_t) -> position:
 
 
 def motion_model(twist: twist_t) -> position:
+    """contain motion model parameters (see source)"""
 
     with numpyro.handlers.scope(prefix="motion"):
 
