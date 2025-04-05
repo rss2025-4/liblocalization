@@ -1,8 +1,6 @@
-import equinox as eqx
 import jax.numpy as jnp
 import numpyro.distributions as dist
 from jax import lax, random
-from jaxtyping import Array, Float
 from numpyro.distributions import constraints
 
 from libracecar.batched import batched
@@ -13,10 +11,8 @@ from libracecar.numpyro_utils import (
 )
 from libracecar.specs import position
 from libracecar.utils import (
-    cast_unchecked_,
     flike,
     fval,
-    pformat_repr,
 )
 
 from .map import _trace_ray_res, precomputed_map, trace_ray

@@ -1,33 +1,17 @@
-import math
-import time
-from typing import Callable
-
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 import numpy as np
-import numpyro
 from geometry_msgs.msg import Twist
-from jax import tree_util as jtu
 from jaxtyping import ArrayLike
 from sensor_msgs.msg import LaserScan
 
 from libracecar.batched import batched
-from libracecar.jax_utils import divide_x_at_zero
-from libracecar.numpyro_utils import (
-    trunc_normal_,
-)
-from libracecar.plot import plot_ctx, plotable
-from libracecar.specs import lazy, position
+from libracecar.specs import lazy
 from libracecar.utils import (
-    debug_print,
     flike,
     fval,
-    jit,
     lazy,
     pformat_repr,
-    safe_select,
-    timer,
 )
 from libracecar.vector import unitvec, vec
 

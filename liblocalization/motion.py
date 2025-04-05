@@ -1,29 +1,19 @@
 import math
-import time
 
-import equinox as eqx
-import jax
 import jax.numpy as jnp
 import numpyro
-from geometry_msgs.msg import Twist
 
 from libracecar.jax_utils import divide_x_at_zero
 from libracecar.numpyro_utils import (
     trunc_normal_,
 )
-from libracecar.plot import plot_ctx, plotable
 from libracecar.specs import position
 from libracecar.utils import (
-    debug_print,
     fval,
-    jit,
-    lazy,
     safe_select,
-    timer,
 )
 from libracecar.vector import unitvec, vec
 
-from .api import LocalizationBase, localization_params
 from .ros import twist_t
 
 

@@ -1,10 +1,8 @@
 from abc import abstractmethod
 
-import numpy as np
 import tf_transformations
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import Twist
-from jax import numpy as jnp
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from tf2_ros import TransformStamped
@@ -15,7 +13,7 @@ from libracecar.batched import batched, blike
 from libracecar.plot import plot_ctx, plot_style, plotable, plotfn
 from libracecar.ros_utils import float_to_time_msg, time_msg_to_float
 from libracecar.specs import position
-from libracecar.utils import lazy, tree_select, tree_to_ShapeDtypeStruct
+from libracecar.utils import lazy, tree_select
 
 from .api import LocalizationBase, localization_params
 from .map import Grid, GridMeta

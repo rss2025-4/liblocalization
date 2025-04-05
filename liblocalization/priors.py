@@ -1,6 +1,3 @@
-import math
-import time
-from queue import Queue
 from typing import Callable
 
 import equinox as eqx
@@ -8,48 +5,21 @@ import jax
 import jax.numpy as jnp
 import numpyro
 import numpyro.distributions as dist
-import optax
-from geometry_msgs.msg import Twist
-from jax import lax, random
 from jaxtyping import Array, Float
-from numpyro.distributions import constraints
-from termcolor import colored
 
 from libracecar.batched import batched
-from libracecar.jax_utils import divide_x_at_zero
 from libracecar.numpyro_utils import (
-    batched_dist,
     batched_vmap_with_rng,
-    numpyro_param,
-    trunc_normal_,
     vmap_seperate_seed,
 )
-from libracecar.plot import plot_ctx, plot_style, plotable
+from libracecar.plot import plot_style, plotable
 from libracecar.specs import position
 from libracecar.utils import (
-    cast_unchecked,
     cast_unchecked_,
-    cond_,
-    debug_print,
-    ensure_not_weak_typed,
-    flike,
     fval,
-    io_callback_,
-    jit,
-    lazy,
-    pformat_repr,
-    safe_select,
-    timer,
-    tree_at_,
-    tree_to_ShapeDtypeStruct,
 )
-from libracecar.vector import unitvec, vec
 
-from .api import LocalizationBase, localization_params
-from .map import _trace_ray_res, precomputed_map, trace_ray
 from .motion import deterministic_position, twist_t
-from .ros import lidar_obs
-from .stats import stats_t
 
 
 class gaussian_prior(eqx.Module):
