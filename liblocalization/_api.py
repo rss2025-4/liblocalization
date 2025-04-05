@@ -82,7 +82,7 @@ class Controller(LocalizationBase):
         ans = self.grid.meta.from_pixels(ans)
 
         x, y, z, w = tf_transformations.quaternion_from_euler(
-            0.0, 0.0, ans.rot.to_angle()
+            0.0, 0.0, float(ans.rot.to_angle())
         )
 
         msg = TransformStamped()
@@ -90,13 +90,13 @@ class Controller(LocalizationBase):
         msg.header.stamp = float_to_time_msg(self._prev_time)
         msg.child_frame_id = self.cfg.laser_frame
 
-        msg.transform.translation.x = ans.tran.x
-        msg.transform.translation.y = ans.tran.y
+        msg.transform.translation.x = float(ans.tran.x)
+        msg.transform.translation.y = float(ans.tran.y)
 
-        msg.transform.rotation.x = x
-        msg.transform.rotation.y = y
-        msg.transform.rotation.z = z
-        msg.transform.rotation.w = w
+        msg.transform.rotation.x = float(x)
+        msg.transform.rotation.y = float(y)
+        msg.transform.rotation.z = float(z)
+        msg.transform.rotation.w = float(w)
 
         return msg
 

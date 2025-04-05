@@ -8,6 +8,7 @@ from rclpy.time import Time
 from sensor_msgs.msg import LaserScan
 from tf2_ros import (
     Node,
+    PoseWithCovarianceStamped,
     TransformStamped,
     rclpy,
 )
@@ -37,6 +38,9 @@ class ExampleSimNode(Node):
         self.lidar_sub = self.create_subscription(
             LaserScan, "/scan", self.lidar_callback, 1
         )
+        self.pose_sub = self.create_subscription(
+            PoseWithCovarianceStamped, "/initialpose", self.pose_callback, 1
+        )
 
         self.visualization_pub = self.create_publisher(Marker, "/visualization", 10)
 
@@ -59,6 +63,24 @@ class ExampleSimNode(Node):
 
         return self.controller
 
+    def pose_callback(self, msg: PoseWithCovarianceStamped):
+        if self.controller is not None:
+            pos_laser = self.odom_transformer.transform_pose(msg.pose)
+
+            t = TransformStamped()
+            t.header = msg.header
+            t.header.stamp = Time()
+            t.child_frame_id = "laser"
+
+            pos = pos_laser.pose.position
+            t.transform.translation.x = pos.x
+            t.transform.translation.y = pos.y
+            t.transform.translation.z = pos.z
+
+            t.transform.rotation = pos_laser.pose.orientation
+
+            self.controller.set_pose(t)
+
     def map_callback(self, map_msg: OccupancyGrid):
         self.controller = self.controller_init(
             localization_params(
@@ -78,6 +100,7 @@ class ExampleSimNode(Node):
             odom.twist = self.odom_transformer.transform_twist(msg.twist)
 
             controller.odom_callback(odom)
+            print(controller.get_pose())
 
     def lidar_callback(self, msg: LaserScan):
         if controller := self.get_controller():
