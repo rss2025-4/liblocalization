@@ -71,7 +71,6 @@ class ExampleSimNode(Node):
 
             t = TransformStamped()
             t.header = msg.header
-            # t.header.stamp = rospy.get_rostime
             t.child_frame_id = "laser"
 
             pos = pos_laser.pose.position
@@ -102,7 +101,8 @@ class ExampleSimNode(Node):
             odom.twist = self.odom_transformer.transform_twist(msg.twist)
 
             controller.odom_callback(odom)
-            print(controller.get_pose())
+            print("pose:", controller.get_pose())
+            print("particles:", controller.get_particles())
 
     def lidar_callback(self, msg: LaserScan):
         if controller := self.get_controller():

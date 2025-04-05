@@ -1,10 +1,14 @@
 from abc import abstractmethod
 
+import numpy as np
 import tf_transformations
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import Twist
+from jax import Array
+from jaxtyping import Float
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
+from termcolor import colored
 from tf2_ros import TransformStamped
 from visualization_msgs.msg import Marker
 
@@ -13,7 +17,7 @@ from libracecar.batched import batched, blike
 from libracecar.plot import plot_ctx, plot_style, plotable, plotfn
 from libracecar.ros_utils import float_to_time_msg, time_msg_to_float
 from libracecar.specs import position
-from libracecar.utils import lazy, tree_select
+from libracecar.utils import jit, lazy, tree_select
 
 from .api import LocalizationBase, localization_params
 from .map import Grid, GridMeta
@@ -44,6 +48,9 @@ class Controller(LocalizationBase):
     @abstractmethod
     def _lidar(self, obs: lazy[batched[lidar_obs]]) -> None: ...
 
+    def _get_particles(self) -> batched[position]:
+        return batched.create(self._get_pose()).reshape(1)
+
     def _lazy_position_ex(self) -> lazy[position]:
         return self._pose_from_ros(TransformStamped())
 
@@ -58,7 +65,9 @@ class Controller(LocalizationBase):
     def _update_time(self, new_time_: Time) -> float:
         new_time = time_msg_to_float(new_time_)
         ans = new_time - self._prev_time
-        assert ans >= 0, f"negative time: {ans}"
+        if ans < 0:
+            print(colored(f"warning: time went backwards by: {ans}", "red"))
+            ans = 0.0
         self._prev_time = new_time
         return ans
 
@@ -99,6 +108,18 @@ class Controller(LocalizationBase):
         msg.transform.rotation.w = float(w)
 
         return msg
+
+    @staticmethod
+    @jit
+    def _get_particles_get_arr(
+        particles: batched[position], meta: GridMeta
+    ) -> Float[Array, "n 3"]:
+        ans = particles.map(meta.from_pixels).map(lambda p: p.as_arr())
+        return ans.unflatten()
+
+    def get_particles(self) -> np.ndarray:
+        ans = Controller._get_particles_get_arr(self._get_particles(), self.grid.meta)
+        return np.array(ans)
 
     @staticmethod
     def _pose_from_ros_cb(pose: lazy[position], map: GridMeta):

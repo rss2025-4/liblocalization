@@ -4,4 +4,4 @@ from .controllers.particles import particles_model, particles_params
 
 pass
 
-from .api_example import ExampleSimNode, examplemain
+from .api_example import ExampleSimNode, examplemain, examplemain2

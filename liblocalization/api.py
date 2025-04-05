@@ -3,6 +3,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Callable
 
+import numpy as np
 from nav_msgs.msg import OccupancyGrid, Odometry
 from sensor_msgs.msg import LaserScan
 from tf2_ros import (
@@ -82,5 +83,12 @@ class LocalizationBase(abc.ABC):
     def get_pose(self) -> TransformStamped:
         """
         get the current best pose estimate.
+        """
+        ...
+
+    @abstractmethod
+    def get_particles(self) -> np.ndarray:
+        """
+        get the particles as a (n, 3) array with (x, y, theta)
         """
         ...

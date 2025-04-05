@@ -29,6 +29,13 @@ autodoc_default_options = {
 
 autodoc_class_signature = "separated"
 
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "jax": ("https://docs.jax.dev/en/latest/", None),
+}
+
 templates_path = ["_templates"]
 exclude_patterns = []
 

@@ -66,6 +66,10 @@ class state(eqx.Module):
     def get_pose(self):
         return self, self.prior.mean()
 
+    def get_particles(self):
+        ans, _ = self.prior.points.split_tuple()
+        return self, ans
+
     def set_pose(self, pose: lazy[position]):
         p = pose()
         self, key = self.get_seed()
@@ -120,6 +124,7 @@ class _particles_model(Controller):
         self.params = params
         self.dispatcher = jax_jit_dispatcher(
             dispatch_spec(state.get_pose),
+            dispatch_spec(state.get_particles),
             dispatch_spec(state.set_pose, self._lazy_position_ex()),
             dispatch_spec(
                 state.twist, self._lazy_twist_ex(), self._plot_ground_truth()
@@ -142,6 +147,9 @@ class _particles_model(Controller):
 
     def _get_pose(self):
         return self.dispatcher.process(state.get_pose)
+
+    def _get_particles(self) -> batched[position]:
+        return self.dispatcher.process(state.get_particles)
 
     def _set_pose(self, pose) -> None:
         return self.dispatcher.process(state.set_pose, pose)
