@@ -26,3 +26,5 @@
    :no-members:
 
 .. autofunction:: examplemain
+
+.. autofunction:: examplemain2
