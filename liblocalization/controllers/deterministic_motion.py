@@ -64,7 +64,7 @@ class state(eqx.Module):
             gt = gt_()
 
             ctx = plot_ctx.create(1000)
-            ctx += gt
+            # ctx += gt
 
             ctx += position.zero().plot_as_seg(plot_style(color=(0.0, 1.0, 0.0)))
 

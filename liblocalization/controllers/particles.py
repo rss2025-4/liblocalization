@@ -89,12 +89,12 @@ class state(eqx.Module):
             gt = gt_()
 
             ctx = plot_ctx.create(100)
-            ctx += gt
+            # ctx += gt
 
             new_prior = self.prior.map(lambda x: x + motion_model(twist))
             self = tree_at_(lambda s: s.prior, self, new_prior)
 
-            ctx += self.prior.plot(20)
+            ctx += self.prior.plot(20, plot_style(color=(0.9, 0.3, 0.0)))
             return self, ctx
 
     def lidar(self, msg: lazy[batched[lidar_obs]]):
