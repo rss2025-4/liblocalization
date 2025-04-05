@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>liblocalization documentation &mdash; liblocalization  documentation</title>
+  <title>interface &mdash; liblocalization  documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -42,7 +42,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">liblocalization documentation</a><ul>
+<li><a class="reference internal" href="#">interface</a><ul>
 <li><a class="reference internal" href="#liblocalization.LocalizationBase"><code class="docutils literal notranslate"><span class="pre">LocalizationBase</span></code></a><ul>
 <li><a class="reference internal" href="#liblocalization.LocalizationBase.cfg"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.cfg</span></code></a></li>
 <li><a class="reference internal" href="#liblocalization.LocalizationBase.odom_callback"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.odom_callback()</span></code></a></li>
@@ -61,6 +61,9 @@
 <li><a class="reference internal" href="#liblocalization.localization_params.__init__"><code class="docutils literal notranslate"><span class="pre">localization_params.__init__()</span></code></a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a class="reference internal" href="#controllers">controllers</a><ul>
 <li><a class="reference internal" href="#liblocalization.deterministic_motion_tracker"><code class="docutils literal notranslate"><span class="pre">deterministic_motion_tracker()</span></code></a></li>
 <li><a class="reference internal" href="#liblocalization.particles_model"><code class="docutils literal notranslate"><span class="pre">particles_model()</span></code></a></li>
 <li><a class="reference internal" href="#liblocalization.particles_params"><code class="docutils literal notranslate"><span class="pre">particles_params</span></code></a><ul>
@@ -68,6 +71,15 @@
 <li><a class="reference internal" href="#liblocalization.particles_params.__init__"><code class="docutils literal notranslate"><span class="pre">particles_params.__init__()</span></code></a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example">example</a><ul>
+<li><a class="reference internal" href="#liblocalization.ExampleSimNode"><code class="docutils literal notranslate"><span class="pre">ExampleSimNode</span></code></a><ul>
+<li><a class="reference internal" href="#liblocalization.ExampleSimNode.__init__"><code class="docutils literal notranslate"><span class="pre">ExampleSimNode.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.ExampleSimNode.__new__"><code class="docutils literal notranslate"><span class="pre">ExampleSimNode.__new__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#liblocalization.examplemain"><code class="docutils literal notranslate"><span class="pre">examplemain()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -86,7 +98,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">liblocalization documentation</li>
+      <li class="breadcrumb-item active">interface</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -96,10 +108,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="liblocalization-documentation">
-<h1>liblocalization documentation<a class="headerlink" href="#liblocalization-documentation" title="Link to this heading"></a></h1>
-<div class="toctree-wrapper compound">
-</div>
+  <section id="interface">
+<h1>interface<a class="headerlink" href="#interface" title="Link to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="liblocalization.LocalizationBase">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">LocalizationBase</span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase" title="Link to this definition"></a></dt>
@@ -143,7 +153,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="liblocalization.localization_params">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">localization_params</span></span><a class="reference internal" href="_modules/liblocalization/api.html#localization_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.localization_params" title="Link to this definition"></a></dt>
-<dd><p>localization_params(map: nav_msgs.msg._occupancy_grid.OccupancyGrid, n_laser_points: int = 100, map_frame: str = ‘map’, laser_frame: str = ‘laser’, marker_callback: Callable[[visualization_msgs.msg._marker.Marker], NoneType] = &lt;function localization_params.&lt;lambda&gt; at 0x7f8c629c20e0&gt;, ground_truth_callback: Callable[[], geometry_msgs.msg._transform_stamped.TransformStamped | None] = &lt;function localization_params.&lt;lambda&gt; at 0x7f8c629c2f80&gt;)</p>
+<dd><p>localization_params(map: nav_msgs.msg._occupancy_grid.OccupancyGrid, n_laser_points: int = 100, map_frame: str = ‘map’, laser_frame: str = ‘laser’, marker_callback: Callable[[visualization_msgs.msg._marker.Marker], NoneType] = &lt;function localization_params.&lt;lambda&gt; at 0x7f84bb962830&gt;, ground_truth_callback: Callable[[], geometry_msgs.msg._transform_stamped.TransformStamped | None] = &lt;function localization_params.&lt;lambda&gt; at 0x7f84bb9635b0&gt;)</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="liblocalization.localization_params.map">
 <span class="sig-name descname"><span class="pre">map</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">OccupancyGrid</span></em><a class="headerlink" href="#liblocalization.localization_params.map" title="Link to this definition"></a></dt>
@@ -188,6 +198,9 @@
 
 </dd></dl>
 
+</section>
+<section id="controllers">
+<h1>controllers<a class="headerlink" href="#controllers" title="Link to this heading"></a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="liblocalization.deterministic_motion_tracker">
 <span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">deterministic_motion_tracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#liblocalization.LocalizationBase" title="liblocalization.api.LocalizationBase"><span class="pre">LocalizationBase</span></a></span></span><a class="reference internal" href="_modules/liblocalization/controllers/deterministic_motion.html#deterministic_motion_tracker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.deterministic_motion_tracker" title="Link to this definition"></a></dt>
@@ -214,6 +227,55 @@
 <dd></dd></dl>
 
 </dd></dl>
+
+</section>
+<section id="example">
+<h1>example<a class="headerlink" href="#example" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.ExampleSimNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">ExampleSimNode</span></span><a class="reference internal" href="_modules/liblocalization/api_example.html#ExampleSimNode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.ExampleSimNode" title="Link to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.ExampleSimNode.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">controller_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#liblocalization.LocalizationBase" title="liblocalization.api.LocalizationBase"><span class="pre">LocalizationBase</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/liblocalization/api_example.html#ExampleSimNode.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.ExampleSimNode.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create a Node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_name</strong> – A name to give to this node. Validated by <code class="xref py py-func docutils literal notranslate"><span class="pre">validate_node_name()</span></code>.</p></li>
+<li><p><strong>context</strong> – The context to be associated with, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for the default global
+context.</p></li>
+<li><p><strong>cli_args</strong> – A list of strings of command line args to be used only by this node.
+These arguments are used to extract remappings used by the node and other ROS specific
+settings, as well as user defined non-ROS arguments.</p></li>
+<li><p><strong>namespace</strong> – The namespace to which relative topic and service names will be prefixed.
+Validated by <code class="xref py py-func docutils literal notranslate"><span class="pre">validate_namespace()</span></code>.</p></li>
+<li><p><strong>use_global_arguments</strong> – <code class="docutils literal notranslate"><span class="pre">False</span></code> if the node should ignore process-wide command line
+args.</p></li>
+<li><p><strong>enable_rosout</strong> – <code class="docutils literal notranslate"><span class="pre">False</span></code> if the node should ignore rosout logging.</p></li>
+<li><p><strong>start_parameter_services</strong> – <code class="docutils literal notranslate"><span class="pre">False</span></code> if the node should not create parameter
+services.</p></li>
+<li><p><strong>parameter_overrides</strong> – A list of overrides for initial values for parameters declared
+on the node.</p></li>
+<li><p><strong>allow_undeclared_parameters</strong> – True if undeclared parameters are allowed.
+This flag affects the behavior of parameter-related operations.</p></li>
+<li><p><strong>automatically_declare_parameters_from_overrides</strong> – If True, the “parameter overrides”
+will be used to implicitly declare parameters on the node during creation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.ExampleSimNode.__new__">
+<span class="sig-name descname"><span class="pre">__new__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#liblocalization.ExampleSimNode.__new__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="liblocalization.examplemain">
+<span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">examplemain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/liblocalization/api_example.html#examplemain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.examplemain" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 </section>
 

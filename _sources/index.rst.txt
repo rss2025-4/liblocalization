@@ -1,10 +1,6 @@
-###############################
- liblocalization documentation
-###############################
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+###########
+ interface
+###########
 
 .. currentmodule:: liblocalization
 
@@ -12,8 +8,21 @@
 
 .. autoclass:: localization_params
 
+#############
+ controllers
+#############
+
 .. autofunction:: deterministic_motion_tracker
 
 .. autofunction:: particles_model
 
 .. autoclass:: particles_params
+
+#########
+ example
+#########
+
+.. autoclass:: ExampleSimNode
+   :no-members:
+
+.. autofunction:: examplemain
