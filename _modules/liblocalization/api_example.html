@@ -76,6 +76,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">sensor_msgs.msg</span><span class="w"> </span><span class="kn">import</span> <span class="n">LaserScan</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tf2_ros</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Node</span><span class="p">,</span>
+    <span class="n">PoseWithCovarianceStamped</span><span class="p">,</span>
     <span class="n">TransformStamped</span><span class="p">,</span>
     <span class="n">rclpy</span><span class="p">,</span>
 <span class="p">)</span>
@@ -109,6 +110,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">lidar_sub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_subscription</span><span class="p">(</span>
             <span class="n">LaserScan</span><span class="p">,</span> <span class="s2">&quot;/scan&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lidar_callback</span><span class="p">,</span> <span class="mi">1</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pose_sub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_subscription</span><span class="p">(</span>
+            <span class="n">PoseWithCovarianceStamped</span><span class="p">,</span> <span class="s2">&quot;/initialpose&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pose_callback</span><span class="p">,</span> <span class="mi">1</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">visualization_pub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">(</span><span class="n">Marker</span><span class="p">,</span> <span class="s2">&quot;/visualization&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 
@@ -132,6 +136,24 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">pose_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">PoseWithCovarianceStamped</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pos_laser</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">odom_transformer</span><span class="o">.</span><span class="n">transform_pose</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">pose</span><span class="p">)</span>
+
+            <span class="n">t</span> <span class="o">=</span> <span class="n">TransformStamped</span><span class="p">()</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">header</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">stamp</span> <span class="o">=</span> <span class="n">Time</span><span class="p">()</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">child_frame_id</span> <span class="o">=</span> <span class="s2">&quot;laser&quot;</span>
+
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">pos_laser</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">x</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">y</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">z</span>
+
+            <span class="n">t</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="n">pos_laser</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">orientation</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">set_pose</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">map_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_msg</span><span class="p">:</span> <span class="n">OccupancyGrid</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller_init</span><span class="p">(</span>
             <span class="n">localization_params</span><span class="p">(</span>
@@ -151,6 +173,7 @@
             <span class="n">odom</span><span class="o">.</span><span class="n">twist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">odom_transformer</span><span class="o">.</span><span class="n">transform_twist</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">twist</span><span class="p">)</span>
 
             <span class="n">controller</span><span class="o">.</span><span class="n">odom_callback</span><span class="p">(</span><span class="n">odom</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">controller</span><span class="o">.</span><span class="n">get_pose</span><span class="p">())</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">lidar_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">LaserScan</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">controller</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_controller</span><span class="p">():</span>
