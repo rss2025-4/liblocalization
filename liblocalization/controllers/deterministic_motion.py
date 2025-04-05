@@ -8,8 +8,6 @@ import numpyro
 from geometry_msgs.msg import Twist
 from jax import Array, random
 
-from liblocalization.map import Grid
-from liblocalization.ros import lidar_obs
 from libracecar.batched import batched
 from libracecar.jax_utils import dispatch_spec, divide_x_at_zero, jax_jit_dispatcher
 from libracecar.numpyro_utils import (
@@ -32,8 +30,10 @@ from libracecar.vector import unitvec, vec
 
 from .._api import Controller
 from ..api import LocalizationBase, localization_params
+from ..map import Grid
 from ..motion import deterministic_position, twist_t
-from ..priors import gaussian_prior
+from ..priors import gaussian
+from ..ros import lidar_obs
 
 
 class state(eqx.Module):
@@ -41,7 +41,7 @@ class state(eqx.Module):
     grid: Grid
 
     pos: position
-    noisy_pos: gaussian_prior
+    noisy_pos: gaussian
     rng_key: Array = random.PRNGKey(0)
 
     def get_seed(self):
@@ -70,11 +70,10 @@ class state(eqx.Module):
 
             # ctx += self.grid.plot()
 
+            twist_p = deterministic_position(twist)
+            self = tree_at_(lambda s: s.pos, self, self.pos + twist_p)
             self = tree_at_(
-                lambda s: s.pos, self, self.pos + deterministic_position(twist)
-            )
-            self = tree_at_(
-                lambda s: s.noisy_pos, self, self.noisy_pos.apply_twist(twist)
+                lambda s: s.noisy_pos, self, self.noisy_pos.apply_twist(twist_p)
             )
 
             ctx += self.pos.plot_as_seg()
@@ -93,7 +92,7 @@ class _deterministic_motion_tracker(Controller):
             self._res,
             self.grid,
             position.zero(),
-            gaussian_prior.from_mean_cov(
+            gaussian.from_mean_cov(
                 jnp.zeros(3),
                 jnp.diag(jnp.array([0.1 / self._res, 0.1 / self._res, 0.02])),
             ),

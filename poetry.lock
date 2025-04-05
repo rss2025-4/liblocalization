@@ -1089,7 +1089,7 @@ unshare = "^0.22"
 type = "git"
 url = "https://github.com/rss2025-4/libracecar.git"
 reference = "HEAD"
-resolved_reference = "883370b86ddc0b35dfd781394ade83fd83b259fe"
+resolved_reference = "c44814d608153f35af8ab226502fa3b6ac7c6992"
 
 [[package]]
 name = "lz4"

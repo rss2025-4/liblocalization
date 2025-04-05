@@ -12,8 +12,6 @@ from geometry_msgs.msg import Twist
 from jax import Array, random
 from tf2_ros import TransformStamped
 
-from liblocalization.map import precompute, precomputed_map
-from liblocalization.sensor import log_likelyhood
 from libracecar.batched import batched
 from libracecar.jax_utils import dispatch_spec, divide_x_at_zero, jax_jit_dispatcher
 from libracecar.numpyro_utils import (
@@ -40,14 +38,17 @@ from libracecar.vector import unitvec, vec
 
 from .._api import Controller
 from ..api import LocalizationBase, localization_params
-from ..motion import motion_model, twist_t
-from ..priors import gaussian_prior, particles
+from ..map import precompute, precomputed_map, trace_ray
+from ..motion import dummy_motion_model, motion_model, twist_t
+from ..priors import gaussian, particles
 from ..ros import lidar_obs
+from ..sensor import log_likelyhood
 
 
 @dataclass
 class particles_params:
     n_particles: int = 1000
+    n_from_gaus: int = 0
 
 
 class state(eqx.Module):
@@ -75,9 +76,14 @@ class state(eqx.Module):
         self, key = self.get_seed()
         with numpyro.handlers.seed(rng_seed=key):
             samples = particles.from_samples(
-                gaussian_prior.from_mean_cov(
+                gaussian.from_mean_cov(
                     p.as_arr(),
-                    jnp.diag(jnp.array([0.2, 0.2, 10.0 / 360 * 2 * math.pi])),
+                    jnp.diag(
+                        jnp.array(
+                            [0.2 / self.res, 0.2 / self.res, 10.0 / 360 * 2 * math.pi]
+                        )
+                        ** 2
+                    ),
                 ).sample_batch(self.params.n_particles)
             )
             return tree_at_(lambda me: me.prior, self, samples), None
@@ -88,34 +94,88 @@ class state(eqx.Module):
             twist = twist_()
             gt = gt_()
 
-            ctx = plot_ctx.create(100)
+            ctx = plot_ctx.create(1000)
             # ctx += gt
 
             new_prior = self.prior.map(lambda x: x + motion_model(twist))
+            # new_prior = self.prior.map(
+            #     lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
+            # )
+
             self = tree_at_(lambda s: s.prior, self, new_prior)
 
             ctx += self.prior.plot(20, plot_style(color=(0.9, 0.3, 0.0)))
+            ctx.check()
             return self, ctx
+
+    def plot_computed_rays(self, obs: batched[lidar_obs]) -> plotable:
+        pos = self.get_pose()[1]
+        return obs.map(
+            lambda x: trace_ray(self.map, pos.tran, pos.rot.mul_unit(x.angle)).plot(
+                x.dist
+            )
+        )
+
+    def _lidar(self, obs: batched[lidar_obs]):
+        ctx = plot_ctx.create(1000)
+        ctx += self.prior.plot(20, plot_style(color=(1.0, 0.0, 0.0)))
+
+        ans1_ = particles.from_logits(
+            self.prior.points.tuple_map(
+                lambda p, w: (p, jnp.log(w) + log_likelyhood(self.map, p, obs))
+            )
+        )
+        ans1 = ans1_.resample(self.params.n_particles - self.params.n_from_gaus)
+
+        if self.params.n_from_gaus == 0:
+            ans_conc = ans1
+        else:
+            gaus = self.prior.fit_to_gaussian()
+
+            def update_guide(guide: gaussian, noise_factor: float):
+                added_noise = jnp.array(
+                    [2.0 / self.res, 0.2 / self.res, 5.0 / 360 * 2 * math.pi]
+                )
+                guide_noisy = gaussian.from_mean_cov(
+                    gaus.mean,
+                    gaus.covariance() + jnp.diag((added_noise * noise_factor) ** 2),
+                )
+
+                def log_l(p: position) -> fval:
+                    return (
+                        -guide_noisy.log_prob(p)
+                        + gaus.log_prob(p)
+                        + log_likelyhood(self.map, p, obs)
+                    )
+
+                logits = guide_noisy.sample_batch(1000).map(lambda p: (p, log_l(p)))
+                return particles.from_logits(logits)
+
+            guide = ans1_.fit_to_gaussian()
+
+            for noise_factor in [1.0, 1.0, 0.5]:
+                guide = update_guide(guide, noise_factor).fit_to_gaussian()
+
+            ans2 = update_guide(guide, 0.5).resample(self.params.n_from_gaus)
+
+            ans_conc = particles.from_samples(
+                batched.concat(
+                    [ans1.points.split_tuple()[0], ans2.points.split_tuple()[0]]
+                )
+            )
+
+        self = tree_at_(lambda me: me.prior, self, ans_conc)
+
+        ctx += self.prior.plot(20, plot_style(color=(0.0, 1.0, 0.0)))
+
+        # ctx += self.plot_computed_rays(obs)
+        ctx.check()
+        return self, ctx
 
     def lidar(self, msg: lazy[batched[lidar_obs]]):
         self, key = self.get_seed()
         with numpyro.handlers.seed(rng_seed=key):
-            obs = msg()
-            pos, new_weights = self.prior.points.tuple_map(
-                lambda p, w: (p, jnp.log(w) + log_likelyhood(self.map, p, obs))
-            ).split_tuple()
-
-            # debug_print("new_weights", new_weights)
-
-            def sample_one():
-                idx = dist.CategoricalLogits(new_weights.unflatten()).sample(
-                    prng_key_()
-                )
-                return pos[idx]
-
-            ans = vmap_seperate_seed(sample_one, axis_size=self.params.n_particles)()
-            self = tree_at_(lambda me: me.prior, self, particles.from_samples(ans))
-            return self, None
+            return self._lidar(msg())
 
 
 class _particles_model(Controller):
@@ -158,12 +218,14 @@ class _particles_model(Controller):
         with timer.create() as t:
             gt = self._plot_ground_truth()
             ctx = self.dispatcher.process(state.twist, twist, gt)
-            self._visualize(ctx)
-            print(f"twist: {t.val} seconds")
+            # self._visualize(ctx)
+            # print(f"twist: {t.val} seconds")
 
     def _lidar(self, obs):
         with timer.create() as t:
-            self.dispatcher.process(state.lidar, obs)
+            ctx = self.dispatcher.process(state.lidar, obs)
+            jax.block_until_ready(ctx)
+            self._visualize(ctx)
             print(f"lidar: {t.val} seconds")
 
 

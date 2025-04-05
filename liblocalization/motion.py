@@ -5,6 +5,7 @@ import numpyro
 
 from libracecar.jax_utils import divide_x_at_zero
 from libracecar.numpyro_utils import (
+    normal_,
     trunc_normal_,
 )
 from libracecar.specs import position
@@ -64,3 +65,19 @@ def motion_model(twist: twist_t) -> position:
         )
 
         return deterministic_position(twist_t(linear, angular, twist.time))
+
+
+def dummy_motion_model(time: fval, res: float, factor: float = 1.0) -> position:
+    with numpyro.handlers.scope(prefix="motion"):
+        linear_x = numpyro.sample("linear_x", normal_(0.0, 3.0 / res))
+        linear_y = numpyro.sample("linear_y", normal_(0.0, 0.5 / res))
+        angle_stdev = 45.0 / 360 * 2 * math.pi
+        angular = numpyro.sample("angular_noise", normal_(0.0, angle_stdev))
+
+        return deterministic_position(
+            twist_t(
+                vec.create(linear_x * factor, linear_y * factor),
+                jnp.array(angular) * factor,
+                time,
+            )
+        )

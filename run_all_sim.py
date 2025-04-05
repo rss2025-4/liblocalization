@@ -8,7 +8,9 @@ def main():
     import time
     from pathlib import Path
 
+    import better_exceptions
     import jax
+    import numpy as np
 
     from liblocalization import (
         ExampleSimNode,
@@ -19,6 +21,7 @@ def main():
     from libracecar.test_utils import proc_manager
 
     jax.config.update("jax_platform_name", "cpu")
+    np.set_printoptions(precision=5, suppress=True)
     # jax.config.update("jax_enable_x64", True)
 
     mapdir = Path(__file__).parent / "maps"
@@ -33,8 +36,6 @@ def main():
         # env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
     )
 
-    # procs.ros_node_subproc(Localization, localization_config())
-    # procs.ros_node_thread(Localization, localization_config())
     procs.ros_node_thread(ExampleSimNode, particles_model(particles_params()))
     # procs.ros_node_thread(ExampleSimNode, deterministic_motion_tracker)
 

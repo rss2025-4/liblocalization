@@ -101,8 +101,8 @@ class ExampleSimNode(Node):
             odom.twist = self.odom_transformer.transform_twist(msg.twist)
 
             controller.odom_callback(odom)
-            print("pose:", controller.get_pose())
-            print("particles:", controller.get_particles())
+            # print("pose:", controller.get_pose())
+            # print("particles:", controller.get_particles())
 
     def lidar_callback(self, msg: LaserScan):
         if controller := self.get_controller():

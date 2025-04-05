@@ -250,13 +250,21 @@ def precompute(grid: Grid) -> precomputed_map:
 
 
 class _trace_ray_res(eqx.Module):
+    coord: vec
+    angle: unitvec
+
     dist: fval
     distance_to_nearest: fval
     hit_pos: vec
     data: precomputed_point
 
     @plotmethod
-    def plot(self, ctx: plot_ctx) -> plot_ctx:
+    def plot(self, ctx: plot_ctx, truth: fval | None = None) -> plot_ctx:
+
+        if truth is not None:
+            ctx += (self.coord + self.angle * truth).plot(
+                plot_style(color=(1.0, 1.0, 0.0))
+            )
 
         normal = self.data.angle * unitvec.from_angle(math.pi / 2)
 
@@ -344,7 +352,11 @@ def trace_ray(
     #     transformed_ang,
     # )
 
+    ans = ans_s + (ans - lax.stop_gradient(ans))
+
     return _trace_ray_res(
+        coord=coord,
+        angle=angle,
         dist=ans_dist,
         distance_to_nearest=loop_res.distance_to_nearest,
         hit_pos=ans,

@@ -12,7 +12,6 @@ from termcolor import colored
 from tf2_ros import TransformStamped
 from visualization_msgs.msg import Marker
 
-from liblocalization.ros import lidar_obs
 from libracecar.batched import batched, blike
 from libracecar.plot import plot_ctx, plot_style, plotable, plotfn
 from libracecar.ros_utils import float_to_time_msg, time_msg_to_float
@@ -21,7 +20,7 @@ from libracecar.utils import jit, lazy, tree_select
 
 from .api import LocalizationBase, localization_params
 from .map import Grid, GridMeta
-from .ros import twist_t
+from .ros import lidar_obs, twist_t
 
 
 class Controller(LocalizationBase):
@@ -139,8 +138,10 @@ class Controller(LocalizationBase):
         m = Marker()
         m.type = Marker.POINTS
         m.header.frame_id = "map"
-        m.scale.x = self._res
-        m.scale.y = self._res
+        # m.scale.x = self._res
+        # m.scale.y = self._res
+        m.scale.x = self._res / 10
+        m.scale.y = self._res / 10
         ctx = self.grid.meta.plot_from_pixels_vec(ctx)
         ctx.execute(m)
         self.cfg.marker_callback(m)
