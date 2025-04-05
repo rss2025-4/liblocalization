@@ -14,7 +14,9 @@ from tf2_ros import (
 )
 from visualization_msgs.msg import Marker
 
+from liblocalization import deterministic_motion_tracker
 from liblocalization.api import LocalizationBase, localization_params
+from liblocalization.controllers.particles import particles_model, particles_params
 
 
 class ExampleSimNode(Node):
@@ -69,7 +71,7 @@ class ExampleSimNode(Node):
 
             t = TransformStamped()
             t.header = msg.header
-            t.header.stamp = Time()
+            # t.header.stamp = rospy.get_rostime
             t.child_frame_id = "laser"
 
             pos = pos_laser.pose.position
@@ -119,8 +121,14 @@ class ExampleSimNode(Node):
 
 
 def examplemain():
-    from liblocalization import ExampleSimNode, deterministic_motion_tracker
-
+    """examle (deterministic_motion_tracker)"""
     rclpy.init()
     rclpy.spin(ExampleSimNode(deterministic_motion_tracker))
+    assert False, "unreachable"
+
+
+def examplemain2():
+    """examle (particles_model)"""
+    rclpy.init()
+    rclpy.spin(ExampleSimNode(particles_model(particles_params(n_particles=1000))))
     assert False, "unreachable"
