@@ -1,0 +1,248 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>liblocalization documentation &mdash; liblocalization  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            liblocalization
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">liblocalization documentation</a><ul>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase"><code class="docutils literal notranslate"><span class="pre">LocalizationBase</span></code></a><ul>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.cfg"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.cfg</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.odom_callback"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.odom_callback()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.lidar_callback"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.lidar_callback()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.set_pose"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.set_pose()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.get_pose"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.get_pose()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#liblocalization.localization_params"><code class="docutils literal notranslate"><span class="pre">localization_params</span></code></a><ul>
+<li><a class="reference internal" href="#liblocalization.localization_params.map"><code class="docutils literal notranslate"><span class="pre">localization_params.map</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.n_laser_points"><code class="docutils literal notranslate"><span class="pre">localization_params.n_laser_points</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.map_frame"><code class="docutils literal notranslate"><span class="pre">localization_params.map_frame</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.laser_frame"><code class="docutils literal notranslate"><span class="pre">localization_params.laser_frame</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.marker_callback"><code class="docutils literal notranslate"><span class="pre">localization_params.marker_callback()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.ground_truth_callback"><code class="docutils literal notranslate"><span class="pre">localization_params.ground_truth_callback()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.__init__"><code class="docutils literal notranslate"><span class="pre">localization_params.__init__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#liblocalization.deterministic_motion_tracker"><code class="docutils literal notranslate"><span class="pre">deterministic_motion_tracker</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_model"><code class="docutils literal notranslate"><span class="pre">particles_model</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params"><code class="docutils literal notranslate"><span class="pre">particles_params</span></code></a><ul>
+<li><a class="reference internal" href="#liblocalization.particles_params.n_particles"><code class="docutils literal notranslate"><span class="pre">particles_params.n_particles</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.__init__"><code class="docutils literal notranslate"><span class="pre">particles_params.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">liblocalization</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">liblocalization documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="liblocalization-documentation">
+<h1>liblocalization documentation<a class="headerlink" href="#liblocalization-documentation" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">LocalizationBase</span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase" title="Link to this definition"></a></dt>
+<dd><p>common interface implemented by localization algorithms</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.cfg">
+<span class="sig-name descname"><span class="pre">cfg</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a></em><a class="headerlink" href="#liblocalization.LocalizationBase.cfg" title="Link to this definition"></a></dt>
+<dd><p>shared parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.odom_callback">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">odom_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Odometry</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.odom_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.odom_callback" title="Link to this definition"></a></dt>
+<dd><p>update the algorithm with an odometry on self.cfg.laser_frame.</p>
+<p>only twist will be used.</p>
+<p>must have a correct timestamp.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.lidar_callback">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">lidar_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LaserScan</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.lidar_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.lidar_callback" title="Link to this definition"></a></dt>
+<dd><p>update the algorithm with  a scan on self.cfg.laser_frame.</p>
+<p>must have a correct timestamp.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.set_pose">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_pose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TransformStamped</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.set_pose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.set_pose" title="Link to this definition"></a></dt>
+<dd><p>set the initial pose.</p>
+<p>pose is given as a transform of self.cfg.map_frame -&gt; self.cfg.laser_frame</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.get_pose">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_pose</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TransformStamped</span></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.get_pose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.get_pose" title="Link to this definition"></a></dt>
+<dd><p>get the current best pose estimate.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.localization_params">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">localization_params</span></span><a class="reference internal" href="_modules/liblocalization/api.html#localization_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.localization_params" title="Link to this definition"></a></dt>
+<dd><p>localization_params(map: nav_msgs.msg._occupancy_grid.OccupancyGrid, n_laser_points: int = 100, map_frame: str = ‘map’, laser_frame: str = ‘laser’, marker_callback: Callable[[visualization_msgs.msg._marker.Marker], NoneType] = &lt;function localization_params.&lt;lambda&gt; at 0x7fef357660e0&gt;, ground_truth_callback: Callable[[], geometry_msgs.msg._transform_stamped.TransformStamped | None] = &lt;function localization_params.&lt;lambda&gt; at 0x7fef35766f80&gt;)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.localization_params.map">
+<span class="sig-name descname"><span class="pre">map</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">OccupancyGrid</span></em><a class="headerlink" href="#liblocalization.localization_params.map" title="Link to this definition"></a></dt>
+<dd><p>the map image and origin</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.localization_params.n_laser_points">
+<span class="sig-name descname"><span class="pre">n_laser_points</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></em><a class="headerlink" href="#liblocalization.localization_params.n_laser_points" title="Link to this definition"></a></dt>
+<dd><p>length of “ranges” in LaserScan; needed for jax to compile computation in advance.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.localization_params.map_frame">
+<span class="sig-name descname"><span class="pre">map_frame</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'map'</span></em><a class="headerlink" href="#liblocalization.localization_params.map_frame" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.localization_params.laser_frame">
+<span class="sig-name descname"><span class="pre">laser_frame</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'laser'</span></em><a class="headerlink" href="#liblocalization.localization_params.laser_frame" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.localization_params.marker_callback">
+<span class="sig-name descname"><span class="pre">marker_callback</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#liblocalization.localization_params.marker_callback" title="Link to this definition"></a></dt>
+<dd><p>callback that can be called from the controller to accept a Marker.</p>
+<p>By default, does nothing with the Marker.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.localization_params.ground_truth_callback">
+<span class="sig-name descname"><span class="pre">ground_truth_callback</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#liblocalization.localization_params.ground_truth_callback" title="Link to this definition"></a></dt>
+<dd><p>callback that can be called from the controller to know the sim ground truth.</p>
+<p>for debugging purposes.</p>
+<p>By default, returns None</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.localization_params.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">map:</span> <span class="pre">~nav_msgs.msg._occupancy_grid.OccupancyGrid,</span> <span class="pre">n_laser_points:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100,</span> <span class="pre">map_frame:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'map',</span> <span class="pre">laser_frame:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'laser',</span> <span class="pre">marker_callback:</span> <span class="pre">~typing.Callable[[~visualization_msgs.msg._marker.Marker],</span> <span class="pre">None]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">localization_params.&lt;lambda&gt;&gt;,</span> <span class="pre">ground_truth_callback:</span> <span class="pre">~typing.Callable[[],</span> <span class="pre">~geometry_msgs.msg._transform_stamped.TransformStamped</span> <span class="pre">|</span> <span class="pre">None]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">localization_params.&lt;lambda&gt;&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#liblocalization.localization_params.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.deterministic_motion_tracker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">deterministic_motion_tracker</span></span><a class="reference internal" href="_modules/liblocalization/controllers/deterministic_motion.html#deterministic_motion_tracker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.deterministic_motion_tracker" title="Link to this definition"></a></dt>
+<dd><p>localization implementation that only uses motion model</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.particles_model">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">particles_model</span></span><a class="reference internal" href="_modules/liblocalization/controllers/particles.html#particles_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.particles_model" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.particles_params">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">particles_params</span></span><a class="reference internal" href="_modules/liblocalization/controllers/particles.html#particles_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.particles_params" title="Link to this definition"></a></dt>
+<dd><p>particles_params(n_particles: int = 1000)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.n_particles">
+<span class="sig-name descname"><span class="pre">n_particles</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1000</span></em><a class="headerlink" href="#liblocalization.particles_params.n_particles" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.particles_params.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_particles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#liblocalization.particles_params.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, rss-2025-team4.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
