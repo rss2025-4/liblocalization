@@ -174,8 +174,8 @@
             <span class="n">odom</span><span class="o">.</span><span class="n">twist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">odom_transformer</span><span class="o">.</span><span class="n">transform_twist</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">twist</span><span class="p">)</span>
 
             <span class="n">controller</span><span class="o">.</span><span class="n">odom_callback</span><span class="p">(</span><span class="n">odom</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;pose:&quot;</span><span class="p">,</span> <span class="n">controller</span><span class="o">.</span><span class="n">get_pose</span><span class="p">())</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;particles:&quot;</span><span class="p">,</span> <span class="n">controller</span><span class="o">.</span><span class="n">get_particles</span><span class="p">())</span>
+            <span class="c1"># print(&quot;pose:&quot;, controller.get_pose())</span>
+            <span class="c1"># print(&quot;particles:&quot;, controller.get_particles())</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">lidar_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">LaserScan</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">controller</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_controller</span><span class="p">():</span>

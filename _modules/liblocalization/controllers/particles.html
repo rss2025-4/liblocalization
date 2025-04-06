@@ -80,8 +80,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">random</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tf2_ros</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransformStamped</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">liblocalization.map</span><span class="w"> </span><span class="kn">import</span> <span class="n">precompute</span><span class="p">,</span> <span class="n">precomputed_map</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">liblocalization.sensor</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_likelyhood</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.batched</span><span class="w"> </span><span class="kn">import</span> <span class="n">batched</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.jax_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">dispatch_spec</span><span class="p">,</span> <span class="n">divide_x_at_zero</span><span class="p">,</span> <span class="n">jax_jit_dispatcher</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.numpyro_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -108,16 +106,19 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.._api</span><span class="w"> </span><span class="kn">import</span> <span class="n">Controller</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..api</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalizationBase</span><span class="p">,</span> <span class="n">localization_params</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..motion</span><span class="w"> </span><span class="kn">import</span> <span class="n">motion_model</span><span class="p">,</span> <span class="n">twist_t</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..priors</span><span class="w"> </span><span class="kn">import</span> <span class="n">gaussian_prior</span><span class="p">,</span> <span class="n">particles</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..map</span><span class="w"> </span><span class="kn">import</span> <span class="n">precompute</span><span class="p">,</span> <span class="n">precomputed_map</span><span class="p">,</span> <span class="n">trace_ray</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..motion</span><span class="w"> </span><span class="kn">import</span> <span class="n">dummy_motion_model</span><span class="p">,</span> <span class="n">motion_model</span><span class="p">,</span> <span class="n">twist_t</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..priors</span><span class="w"> </span><span class="kn">import</span> <span class="n">gaussian</span><span class="p">,</span> <span class="n">particles</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..ros</span><span class="w"> </span><span class="kn">import</span> <span class="n">lidar_obs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..sensor</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_likelyhood</span>
 
 
 <div class="viewcode-block" id="particles_params">
 <a class="viewcode-back" href="../../../index.html#liblocalization.particles_params">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">particles_params</span><span class="p">:</span>
-    <span class="n">n_particles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span></div>
+    <span class="n">n_particles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">n_from_gaus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span></div>
 
 
 
@@ -146,9 +147,14 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_seed</span><span class="p">()</span>
         <span class="k">with</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">rng_seed</span><span class="o">=</span><span class="n">key</span><span class="p">):</span>
             <span class="n">samples</span> <span class="o">=</span> <span class="n">particles</span><span class="o">.</span><span class="n">from_samples</span><span class="p">(</span>
-                <span class="n">gaussian_prior</span><span class="o">.</span><span class="n">from_mean_cov</span><span class="p">(</span>
+                <span class="n">gaussian</span><span class="o">.</span><span class="n">from_mean_cov</span><span class="p">(</span>
                     <span class="n">p</span><span class="o">.</span><span class="n">as_arr</span><span class="p">(),</span>
-                    <span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">10.0</span> <span class="o">/</span> <span class="mi">360</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">])),</span>
+                    <span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span>
+                        <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                            <span class="p">[</span><span class="mf">0.2</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.2</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">10.0</span> <span class="o">/</span> <span class="mi">360</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="o">**</span> <span class="mi">2</span>
+                    <span class="p">),</span>
                 <span class="p">)</span><span class="o">.</span><span class="n">sample_batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">n_particles</span><span class="p">)</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">me</span><span class="p">:</span> <span class="n">me</span><span class="o">.</span><span class="n">prior</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">),</span> <span class="kc">None</span>
@@ -159,34 +165,88 @@
             <span class="n">twist</span> <span class="o">=</span> <span class="n">twist_</span><span class="p">()</span>
             <span class="n">gt</span> <span class="o">=</span> <span class="n">gt_</span><span class="p">()</span>
 
-            <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+            <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
             <span class="c1"># ctx += gt</span>
 
             <span class="n">new_prior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">motion_model</span><span class="p">(</span><span class="n">twist</span><span class="p">))</span>
+            <span class="c1"># new_prior = self.prior.map(</span>
+            <span class="c1">#     lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)</span>
+            <span class="c1"># )</span>
+
             <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">prior</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_prior</span><span class="p">)</span>
 
             <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">plot_style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">check</span><span class="p">()</span>
             <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_computed_rays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">plotable</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pose</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">obs</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">trace_ray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">tran</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">rot</span><span class="o">.</span><span class="n">mul_unit</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">angle</span><span class="p">))</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">x</span><span class="o">.</span><span class="n">dist</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]):</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+        <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">plot_style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
+
+        <span class="n">ans1_</span> <span class="o">=</span> <span class="n">particles</span><span class="o">.</span><span class="n">from_logits</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">tuple_map</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">+</span> <span class="n">log_likelyhood</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">obs</span><span class="p">))</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">ans1</span> <span class="o">=</span> <span class="n">ans1_</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">n_particles</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">n_from_gaus</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">n_from_gaus</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ans_conc</span> <span class="o">=</span> <span class="n">ans1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gaus</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">fit_to_gaussian</span><span class="p">()</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">update_guide</span><span class="p">(</span><span class="n">guide</span><span class="p">:</span> <span class="n">gaussian</span><span class="p">,</span> <span class="n">noise_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+                <span class="n">added_noise</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                    <span class="p">[</span><span class="mf">2.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.2</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">5.0</span> <span class="o">/</span> <span class="mi">360</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">]</span>
+                <span class="p">)</span>
+                <span class="n">guide_noisy</span> <span class="o">=</span> <span class="n">gaussian</span><span class="o">.</span><span class="n">from_mean_cov</span><span class="p">(</span>
+                    <span class="n">gaus</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+                    <span class="n">gaus</span><span class="o">.</span><span class="n">covariance</span><span class="p">()</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">((</span><span class="n">added_noise</span> <span class="o">*</span> <span class="n">noise_factor</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span>
+                <span class="p">)</span>
+
+                <span class="k">def</span><span class="w"> </span><span class="nf">log_l</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">position</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">fval</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">(</span>
+                        <span class="o">-</span><span class="n">guide_noisy</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                        <span class="o">+</span> <span class="n">gaus</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                        <span class="o">+</span> <span class="n">log_likelyhood</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span>
+                    <span class="p">)</span>
+
+                <span class="n">logits</span> <span class="o">=</span> <span class="n">guide_noisy</span><span class="o">.</span><span class="n">sample_batch</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">log_l</span><span class="p">(</span><span class="n">p</span><span class="p">)))</span>
+                <span class="k">return</span> <span class="n">particles</span><span class="o">.</span><span class="n">from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+
+            <span class="n">guide</span> <span class="o">=</span> <span class="n">ans1_</span><span class="o">.</span><span class="n">fit_to_gaussian</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">noise_factor</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]:</span>
+                <span class="n">guide</span> <span class="o">=</span> <span class="n">update_guide</span><span class="p">(</span><span class="n">guide</span><span class="p">,</span> <span class="n">noise_factor</span><span class="p">)</span><span class="o">.</span><span class="n">fit_to_gaussian</span><span class="p">()</span>
+
+            <span class="n">ans2</span> <span class="o">=</span> <span class="n">update_guide</span><span class="p">(</span><span class="n">guide</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">n_from_gaus</span><span class="p">)</span>
+
+            <span class="n">ans_conc</span> <span class="o">=</span> <span class="n">particles</span><span class="o">.</span><span class="n">from_samples</span><span class="p">(</span>
+                <span class="n">batched</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">ans1</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">split_tuple</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ans2</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">split_tuple</span><span class="p">()[</span><span class="mi">0</span><span class="p">]]</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">me</span><span class="p">:</span> <span class="n">me</span><span class="o">.</span><span class="n">prior</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ans_conc</span><span class="p">)</span>
+
+        <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">plot_style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
+
+        <span class="c1"># ctx += self.plot_computed_rays(obs)</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">check</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]]):</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_seed</span><span class="p">()</span>
         <span class="k">with</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">rng_seed</span><span class="o">=</span><span class="n">key</span><span class="p">):</span>
-            <span class="n">obs</span> <span class="o">=</span> <span class="n">msg</span><span class="p">()</span>
-            <span class="n">pos</span><span class="p">,</span> <span class="n">new_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">tuple_map</span><span class="p">(</span>
-                <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">+</span> <span class="n">log_likelyhood</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">obs</span><span class="p">))</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">split_tuple</span><span class="p">()</span>
-
-            <span class="c1"># debug_print(&quot;new_weights&quot;, new_weights)</span>
-
-            <span class="k">def</span><span class="w"> </span><span class="nf">sample_one</span><span class="p">():</span>
-                <span class="n">idx</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">CategoricalLogits</span><span class="p">(</span><span class="n">new_weights</span><span class="o">.</span><span class="n">unflatten</span><span class="p">())</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
-                    <span class="n">prng_key_</span><span class="p">()</span>
-                <span class="p">)</span>
-                <span class="k">return</span> <span class="n">pos</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-
-            <span class="n">ans</span> <span class="o">=</span> <span class="n">vmap_seperate_seed</span><span class="p">(</span><span class="n">sample_one</span><span class="p">,</span> <span class="n">axis_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">n_particles</span><span class="p">)()</span>
-            <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">me</span><span class="p">:</span> <span class="n">me</span><span class="o">.</span><span class="n">prior</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="o">.</span><span class="n">from_samples</span><span class="p">(</span><span class="n">ans</span><span class="p">))</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lidar</span><span class="p">(</span><span class="n">msg</span><span class="p">())</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_particles_model</span><span class="p">(</span><span class="n">Controller</span><span class="p">):</span>
@@ -229,12 +289,14 @@
         <span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">create</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
             <span class="n">gt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot_ground_truth</span><span class="p">()</span>
             <span class="n">ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">twist</span><span class="p">,</span> <span class="n">twist</span><span class="p">,</span> <span class="n">gt</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_visualize</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;twist: </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">val</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
+            <span class="c1"># self._visualize(ctx)</span>
+            <span class="c1"># print(f&quot;twist: {t.val} seconds&quot;)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">):</span>
         <span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">create</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">lidar</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span>
+            <span class="n">ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">lidar</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_visualize</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;lidar: </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">val</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
 
 
