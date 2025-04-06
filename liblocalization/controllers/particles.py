@@ -52,6 +52,8 @@ class particles_params:
 
     use_motion_model: bool = True
 
+    plot_level: int = 0
+
 
 class state(eqx.Module):
     res: float = eqx.field(static=True)
@@ -172,7 +174,8 @@ class state(eqx.Module):
 
         ctx += self.prior.plot(20, plot_style(color=(0.0, 1.0, 0.0)))
 
-        # ctx += self.plot_computed_rays(obs)
+        if self.params.plot_level >= 1:
+            ctx += self.plot_computed_rays(obs)
         ctx.check()
         return self, ctx
 
