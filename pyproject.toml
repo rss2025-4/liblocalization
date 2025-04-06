@@ -18,7 +18,8 @@ known_first_party = ["liblocalization", "libracecar", "_liblocalization_cpp"]
 [tool.poetry.dependencies]
 libracecar = { git = "https://github.com/rss2025-4/libracecar.git" }
 # libracecar = { path = "/home/alan/6.4200/libracecar/", develop = true }
-liblocalization-cpp = { path = "./cpp" }
+liblocalization-cpp = { git = "https://github.com/rss2025-4/liblocalization.git", subdirectory = "cpp" }
+# liblocalization-cpp = { path = "./cpp" }
 
 jax = "^0.5.3"
 rosbags = "^0.10.9"

@@ -1052,8 +1052,11 @@ files = []
 develop = false
 
 [package.source]
-type = "directory"
-url = "cpp"
+type = "git"
+url = "https://github.com/rss2025-4/liblocalization.git"
+reference = "HEAD"
+resolved_reference = "afbedab802bbd9d7941fc3f54495648eb69c0327"
+subdirectory = "cpp"
 
 [[package]]
 name = "libracecar"
@@ -2947,4 +2950,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.13"
-content-hash = "114671a29d988586615d2ef8bcd4e5284e03c83d8b915fea7cb74f8891e46615"
+content-hash = "69f55920a468efe384f51fbbd898763c4cdb1bba30c04fe7a6a388e4d8af56e7"
