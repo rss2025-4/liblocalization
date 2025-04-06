@@ -141,44 +141,44 @@
     <span class="n">n_traces</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">fval</span><span class="p">:</span>
 
-    <span class="c1"># n_rays = 30</span>
-    <span class="c1"># part_len = len(observations) // 30</span>
+    <span class="n">n_traces</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="n">part_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span> <span class="o">//</span> <span class="mi">30</span>
 
-    <span class="c1"># def handle_batch(obs: batched[lidar_obs]):</span>
-    <span class="c1">#     ang = obs.map(lambda x: x.angle.to_angle()).mean().unwrap()</span>
-    <span class="c1">#     ray_ang = pos.rot.mul_unit(unitvec.from_angle(ang))</span>
-    <span class="c1">#     ray = trace_ray(map, pos.tran, ray_ang)</span>
-    <span class="c1">#     ray_dist = ray_model(ray, map.res)</span>
-    <span class="c1">#     log_probs = jnp.sum(</span>
-    <span class="c1">#         obs.map(</span>
-    <span class="c1">#             lambda x: ray_dist.log_prob(jnp.clip(x.dist * map.res, 0.0, d_max))</span>
-    <span class="c1">#         ).unflatten()</span>
-    <span class="c1">#     )</span>
-    <span class="c1">#     return log_probs</span>
-
-    <span class="c1"># ans = jax.vmap(handle_batch)(</span>
-    <span class="c1">#     observations[: n_rays * part_len].reshape(n_rays, part_len)</span>
-    <span class="c1"># )</span>
-    <span class="c1"># return jnp.sum(ans)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample_one</span><span class="p">():</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">prng_key_</span><span class="p">(),</span> <span class="p">(),</span> <span class="n">minval</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
-
-        <span class="n">ray_ang</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">rot</span><span class="o">.</span><span class="n">mul_unit</span><span class="p">(</span><span class="n">observations</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span><span class="o">.</span><span class="n">angle</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_batch</span><span class="p">(</span><span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]):</span>
+        <span class="n">ang</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">angle</span><span class="o">.</span><span class="n">to_angle</span><span class="p">())</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
+        <span class="n">ray_ang</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">rot</span><span class="o">.</span><span class="n">mul_unit</span><span class="p">(</span><span class="n">unitvec</span><span class="o">.</span><span class="n">from_angle</span><span class="p">(</span><span class="n">ang</span><span class="p">))</span>
         <span class="n">ray</span> <span class="o">=</span> <span class="n">trace_ray</span><span class="p">(</span><span class="nb">map</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">tran</span><span class="p">,</span> <span class="n">ray_ang</span><span class="p">)</span>
         <span class="n">ray_dist</span> <span class="o">=</span> <span class="n">ray_model</span><span class="p">(</span><span class="n">ray</span><span class="p">,</span> <span class="nb">map</span><span class="o">.</span><span class="n">res</span><span class="p">)</span>
-
-        <span class="n">near</span> <span class="o">=</span> <span class="n">observations</span><span class="o">.</span><span class="n">dynamic_slice</span><span class="p">((</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,))</span>
-        <span class="n">log_probs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
-            <span class="n">near</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+        <span class="n">log_probs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">obs</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
                 <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">ray_dist</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dist</span> <span class="o">*</span> <span class="nb">map</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">d_max</span><span class="p">))</span>
             <span class="p">)</span><span class="o">.</span><span class="n">unflatten</span><span class="p">()</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">log_probs</span>
 
-    <span class="n">ans</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">vmap_seperate_seed</span><span class="p">(</span><span class="n">sample_one</span><span class="p">,</span> <span class="n">axis_size</span><span class="o">=</span><span class="n">n_traces</span><span class="p">)())</span>
+    <span class="n">ans</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">handle_batch</span><span class="p">)(</span>
+        <span class="n">observations</span><span class="p">[:</span> <span class="n">n_traces</span> <span class="o">*</span> <span class="n">part_len</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_traces</span><span class="p">,</span> <span class="n">part_len</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ans</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">ans</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span>
+    <span class="c1"># def sample_one():</span>
+    <span class="c1">#     idx = random.randint(prng_key_(), (), minval=2, maxval=len(observations) - 2)</span>
+
+    <span class="c1">#     ray_ang = pos.rot.mul_unit(observations[idx].unwrap().angle)</span>
+    <span class="c1">#     ray = trace_ray(map, pos.tran, ray_ang)</span>
+    <span class="c1">#     ray_dist = ray_model(ray, map.res)</span>
+
+    <span class="c1">#     near = observations.dynamic_slice((idx - 2,), (5,))</span>
+    <span class="c1">#     log_probs = jnp.mean(</span>
+    <span class="c1">#         near.map(</span>
+    <span class="c1">#             lambda x: ray_dist.log_prob(jnp.clip(x.dist * map.res, 0.0, d_max))</span>
+    <span class="c1">#         ).unflatten()</span>
+    <span class="c1">#     )</span>
+    <span class="c1">#     return log_probs</span>
+
+    <span class="c1"># ans = jnp.mean(vmap_seperate_seed(sample_one, axis_size=n_traces)())</span>
+
+    <span class="c1"># return ans * len(observations)</span>
 </pre></div>
 
            </div>

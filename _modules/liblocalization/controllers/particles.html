@@ -118,7 +118,9 @@
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">particles_params</span><span class="p">:</span>
     <span class="n">n_particles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
-    <span class="n">n_from_gaus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span></div>
+    <span class="n">n_from_gaus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">use_motion_model</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
 
@@ -168,10 +170,12 @@
             <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
             <span class="c1"># ctx += gt</span>
 
-            <span class="n">new_prior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">motion_model</span><span class="p">(</span><span class="n">twist</span><span class="p">))</span>
-            <span class="c1"># new_prior = self.prior.map(</span>
-            <span class="c1">#     lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)</span>
-            <span class="c1"># )</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">use_motion_model</span><span class="p">:</span>
+                <span class="n">new_prior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">motion_model</span><span class="p">(</span><span class="n">twist</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_prior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+                    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">dummy_motion_model</span><span class="p">(</span><span class="n">twist</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+                <span class="p">)</span>
 
             <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">prior</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_prior</span><span class="p">)</span>
 
