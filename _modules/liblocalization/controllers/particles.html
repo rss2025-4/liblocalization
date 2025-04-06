@@ -122,7 +122,8 @@
 
     <span class="n">use_motion_model</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="n">plot_level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span></div>
+    <span class="n">plot_level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">plot_points_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4000</span></div>
 
 
 
@@ -169,7 +170,7 @@
             <span class="n">twist</span> <span class="o">=</span> <span class="n">twist_</span><span class="p">()</span>
             <span class="n">gt</span> <span class="o">=</span> <span class="n">gt_</span><span class="p">()</span>
 
-            <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+            <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">plot_points_limit</span><span class="p">)</span>
             <span class="c1"># ctx += gt</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">use_motion_model</span><span class="p">:</span>
@@ -187,14 +188,15 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_computed_rays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">plotable</span><span class="p">:</span>
         <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pose</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">obs</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
-            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">trace_ray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">tran</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">rot</span><span class="o">.</span><span class="n">mul_unit</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">angle</span><span class="p">))</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                <span class="n">x</span><span class="o">.</span><span class="n">dist</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">plot_one</span><span class="p">():</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">prng_key_</span><span class="p">(),</span> <span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">))]</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">trace_ray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">tran</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">rot</span><span class="o">.</span><span class="n">mul_unit</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">angle</span><span class="p">))</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dist</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">vmap_seperate_seed</span><span class="p">(</span><span class="n">plot_one</span><span class="p">,</span> <span class="n">axis_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]):</span>
-        <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span>
         <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">plot_style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
 
         <span class="n">ans1_</span> <span class="o">=</span> <span class="n">particles</span><span class="o">.</span><span class="n">from_logits</span><span class="p">(</span>
