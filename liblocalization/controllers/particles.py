@@ -50,6 +50,8 @@ class particles_params:
     n_particles: int = 1000
     n_from_gaus: int = 0
 
+    use_motion_model: bool = True
+
 
 class state(eqx.Module):
     res: float = eqx.field(static=True)
@@ -97,10 +99,12 @@ class state(eqx.Module):
             ctx = plot_ctx.create(1000)
             # ctx += gt
 
-            new_prior = self.prior.map(lambda x: x + motion_model(twist))
-            # new_prior = self.prior.map(
-            #     lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
-            # )
+            if self.params.use_motion_model:
+                new_prior = self.prior.map(lambda x: x + motion_model(twist))
+            else:
+                new_prior = self.prior.map(
+                    lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
+                )
 
             self = tree_at_(lambda s: s.prior, self, new_prior)
 

@@ -36,7 +36,9 @@ def main():
         # env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
     )
 
-    procs.ros_node_thread(ExampleSimNode, particles_model(particles_params()))
+    procs.ros_node_thread(
+        ExampleSimNode, particles_model(particles_params(use_motion_model=False))
+    )
     # procs.ros_node_thread(ExampleSimNode, deterministic_motion_tracker)
 
     time.sleep(2.0)

@@ -70,41 +70,41 @@ def log_likelyhood(
     n_traces: int = 30,
 ) -> fval:
 
-    # n_rays = 30
-    # part_len = len(observations) // 30
+    n_traces = 30
+    part_len = len(observations) // 30
 
-    # def handle_batch(obs: batched[lidar_obs]):
-    #     ang = obs.map(lambda x: x.angle.to_angle()).mean().unwrap()
-    #     ray_ang = pos.rot.mul_unit(unitvec.from_angle(ang))
-    #     ray = trace_ray(map, pos.tran, ray_ang)
-    #     ray_dist = ray_model(ray, map.res)
-    #     log_probs = jnp.sum(
-    #         obs.map(
-    #             lambda x: ray_dist.log_prob(jnp.clip(x.dist * map.res, 0.0, d_max))
-    #         ).unflatten()
-    #     )
-    #     return log_probs
-
-    # ans = jax.vmap(handle_batch)(
-    #     observations[: n_rays * part_len].reshape(n_rays, part_len)
-    # )
-    # return jnp.sum(ans)
-
-    def sample_one():
-        idx = random.randint(prng_key_(), (), minval=2, maxval=len(observations) - 2)
-
-        ray_ang = pos.rot.mul_unit(observations[idx].unwrap().angle)
+    def handle_batch(obs: batched[lidar_obs]):
+        ang = obs.map(lambda x: x.angle.to_angle()).mean().unwrap()
+        ray_ang = pos.rot.mul_unit(unitvec.from_angle(ang))
         ray = trace_ray(map, pos.tran, ray_ang)
         ray_dist = ray_model(ray, map.res)
-
-        near = observations.dynamic_slice((idx - 2,), (5,))
-        log_probs = jnp.mean(
-            near.map(
+        log_probs = jnp.sum(
+            obs.map(
                 lambda x: ray_dist.log_prob(jnp.clip(x.dist * map.res, 0.0, d_max))
             ).unflatten()
         )
         return log_probs
 
-    ans = jnp.mean(vmap_seperate_seed(sample_one, axis_size=n_traces)())
+    ans = jax.vmap(handle_batch)(
+        observations[: n_traces * part_len].reshape(n_traces, part_len)
+    )
+    return jnp.sum(ans)
 
-    return ans * len(observations)
+    # def sample_one():
+    #     idx = random.randint(prng_key_(), (), minval=2, maxval=len(observations) - 2)
+
+    #     ray_ang = pos.rot.mul_unit(observations[idx].unwrap().angle)
+    #     ray = trace_ray(map, pos.tran, ray_ang)
+    #     ray_dist = ray_model(ray, map.res)
+
+    #     near = observations.dynamic_slice((idx - 2,), (5,))
+    #     log_probs = jnp.mean(
+    #         near.map(
+    #             lambda x: ray_dist.log_prob(jnp.clip(x.dist * map.res, 0.0, d_max))
+    #         ).unflatten()
+    #     )
+    #     return log_probs
+
+    # ans = jnp.mean(vmap_seperate_seed(sample_one, axis_size=n_traces)())
+
+    # return ans * len(observations)
