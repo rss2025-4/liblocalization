@@ -53,7 +53,7 @@ class particles_params:
     use_motion_model: bool = True
 
     plot_level: int = 0
-    plot_points_limit: int = 4000
+    plot_points_limit: int = 1000
 
 
 class state(eqx.Module):

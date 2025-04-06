@@ -78,12 +78,12 @@ def log_likelyhood(
         ray_ang = pos.rot.mul_unit(unitvec.from_angle(ang))
         ray = trace_ray(map, pos.tran, ray_ang)
         ray_dist = ray_model(ray, map.res)
-        log_probs = jnp.sum(
+        log_probs = jnp.mean(
             obs.map(
                 lambda x: ray_dist.log_prob(jnp.clip(x.dist * map.res, 0.0, d_max))
             ).unflatten()
         )
-        return log_probs
+        return log_probs * min(len(obs), 5)
 
     ans = jax.vmap(handle_batch)(
         observations[: n_traces * part_len].reshape(n_traces, part_len)
