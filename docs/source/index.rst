@@ -4,6 +4,9 @@
 
 .. code:: text
 
+   # unisntall existing if updating
+   pip uninstall liblocalization -y
+
    # latest pip install --upgrade
    git+https://github.com/rss2025-4/liblocalization.git # or from branch
    pip install --upgrade

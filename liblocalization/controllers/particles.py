@@ -53,6 +53,7 @@ class particles_params:
     use_motion_model: bool = True
 
     plot_level: int = 0
+    plot_points_limit: int = 4000
 
 
 class state(eqx.Module):
@@ -98,7 +99,7 @@ class state(eqx.Module):
             twist = twist_()
             gt = gt_()
 
-            ctx = plot_ctx.create(1000)
+            ctx = plot_ctx.create(self.params.plot_points_limit)
             # ctx += gt
 
             if self.params.use_motion_model:
@@ -116,14 +117,15 @@ class state(eqx.Module):
 
     def plot_computed_rays(self, obs: batched[lidar_obs]) -> plotable:
         pos = self.get_pose()[1]
-        return obs.map(
-            lambda x: trace_ray(self.map, pos.tran, pos.rot.mul_unit(x.angle)).plot(
-                x.dist
-            )
-        )
+
+        def plot_one():
+            x = obs[random.randint(prng_key_(), (), 0, len(obs))].unwrap()
+            return trace_ray(self.map, pos.tran, pos.rot.mul_unit(x.angle)).plot(x.dist)
+
+        return vmap_seperate_seed(plot_one, axis_size=100)()
 
     def _lidar(self, obs: batched[lidar_obs]):
-        ctx = plot_ctx.create(1000)
+        ctx = plot_ctx.create(3000)
         ctx += self.prior.plot(20, plot_style(color=(1.0, 0.0, 0.0)))
 
         ans1_ = particles.from_logits(

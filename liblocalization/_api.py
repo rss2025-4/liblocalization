@@ -138,10 +138,10 @@ class Controller(LocalizationBase):
         m = Marker()
         m.type = Marker.POINTS
         m.header.frame_id = "map"
-        # m.scale.x = self._res
-        # m.scale.y = self._res
-        m.scale.x = self._res / 2
-        m.scale.y = self._res / 2
+        m.scale.x = self._res
+        m.scale.y = self._res
+        # m.scale.x = self._res / 2
+        # m.scale.y = self._res / 2
         ctx = self.grid.meta.plot_from_pixels_vec(ctx)
         ctx.execute(m)
         self.cfg.marker_callback(m)
