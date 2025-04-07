@@ -123,7 +123,9 @@
     <span class="n">use_motion_model</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">plot_level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">plot_points_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span></div>
+    <span class="n">plot_points_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+
+    <span class="n">evidence_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span></div>
 
 
 
@@ -156,7 +158,7 @@
                     <span class="n">p</span><span class="o">.</span><span class="n">as_arr</span><span class="p">(),</span>
                     <span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span>
                         <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-                            <span class="p">[</span><span class="mf">0.2</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.2</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">10.0</span> <span class="o">/</span> <span class="mi">360</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">]</span>
+                            <span class="p">[</span><span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">45.0</span> <span class="o">/</span> <span class="mi">360</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">]</span>
                         <span class="p">)</span>
                         <span class="o">**</span> <span class="mi">2</span>
                     <span class="p">),</span>
@@ -175,10 +177,10 @@
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">use_motion_model</span><span class="p">:</span>
                 <span class="n">new_prior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">motion_model</span><span class="p">(</span><span class="n">twist</span><span class="p">))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">new_prior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
-                    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">dummy_motion_model</span><span class="p">(</span><span class="n">twist</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
-                <span class="p">)</span>
+            <span class="c1"># else:</span>
+            <span class="n">new_prior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">dummy_motion_model</span><span class="p">(</span><span class="n">twist</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+            <span class="p">)</span>
 
             <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">prior</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_prior</span><span class="p">)</span>
 
@@ -201,7 +203,11 @@
 
         <span class="n">ans1_</span> <span class="o">=</span> <span class="n">particles</span><span class="o">.</span><span class="n">from_logits</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">tuple_map</span><span class="p">(</span>
-                <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">+</span> <span class="n">log_likelyhood</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">obs</span><span class="p">))</span>
+                <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="n">p</span><span class="p">,</span>
+                    <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="n">log_likelyhood</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">evidence_factor</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="p">)</span>
         <span class="p">)</span>
         <span class="n">ans1</span> <span class="o">=</span> <span class="n">ans1_</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">n_particles</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">n_from_gaus</span><span class="p">)</span>
@@ -224,7 +230,7 @@
                     <span class="k">return</span> <span class="p">(</span>
                         <span class="o">-</span><span class="n">guide_noisy</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
                         <span class="o">+</span> <span class="n">gaus</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-                        <span class="o">+</span> <span class="n">log_likelyhood</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span>
+                        <span class="o">+</span> <span class="n">log_likelyhood</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">evidence_factor</span>
                     <span class="p">)</span>
 
                 <span class="n">logits</span> <span class="o">=</span> <span class="n">guide_noisy</span><span class="o">.</span><span class="n">sample_batch</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">log_l</span><span class="p">(</span><span class="n">p</span><span class="p">)))</span>
