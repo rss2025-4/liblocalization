@@ -106,10 +106,10 @@ class state(eqx.Module):
 
             if self.params.use_motion_model:
                 new_prior = self.prior.map(lambda x: x + motion_model(twist))
-            # else:
-            new_prior = self.prior.map(
-                lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
-            )
+            else:
+                new_prior = self.prior.map(
+                    lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
+                )
 
             self = tree_at_(lambda s: s.prior, self, new_prior)
 
@@ -241,7 +241,7 @@ class _particles_model(Controller):
             ctx = self.dispatcher.process(state.lidar, obs)
             jax.block_until_ready(ctx)
             self._visualize(ctx)
-            print(f"lidar: {t.val} seconds")
+            # print(f"lidar: {t.val} seconds")
 
 
 def particles_model(

@@ -265,6 +265,7 @@ class _trace_ray_res(eqx.Module):
             ctx += (self.coord + self.angle * truth).plot(
                 plot_style(color=(1.0, 1.0, 0.0))
             )
+            return ctx
 
         normal = self.data.angle * unitvec.from_angle(math.pi / 2)
 

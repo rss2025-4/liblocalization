@@ -38,9 +38,7 @@ def main():
 
     procs.ros_node_thread(
         ExampleSimNode,
-        particles_model(
-            particles_params(use_motion_model=False, plot_level=10, n_particles=500)
-        ),
+        particles_model(particles_params(plot_level=10, n_particles=500)),
     )
     # procs.ros_node_thread(ExampleSimNode, deterministic_motion_tracker)
 

@@ -21,7 +21,7 @@ from libracecar.vector import unitvec
 from .map import _trace_ray_res, precomputed_map, trace_ray
 from .ros import lidar_obs
 
-d_max: float = 3.0
+d_max: float = 10.0
 
 
 def ray_model(ray: _trace_ray_res, res: float) -> dist.Distribution:
