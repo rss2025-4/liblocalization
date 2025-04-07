@@ -55,6 +55,8 @@ class particles_params:
     plot_level: int = 0
     plot_points_limit: int = 1000
 
+    evidence_factor: float = 1.0
+
 
 class state(eqx.Module):
     res: float = eqx.field(static=True)
@@ -85,7 +87,7 @@ class state(eqx.Module):
                     p.as_arr(),
                     jnp.diag(
                         jnp.array(
-                            [0.2 / self.res, 0.2 / self.res, 10.0 / 360 * 2 * math.pi]
+                            [1.0 / self.res, 1.0 / self.res, 45.0 / 360 * 2 * math.pi]
                         )
                         ** 2
                     ),
@@ -104,10 +106,10 @@ class state(eqx.Module):
 
             if self.params.use_motion_model:
                 new_prior = self.prior.map(lambda x: x + motion_model(twist))
-            else:
-                new_prior = self.prior.map(
-                    lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
-                )
+            # else:
+            new_prior = self.prior.map(
+                lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
+            )
 
             self = tree_at_(lambda s: s.prior, self, new_prior)
 
@@ -130,7 +132,11 @@ class state(eqx.Module):
 
         ans1_ = particles.from_logits(
             self.prior.points.tuple_map(
-                lambda p, w: (p, jnp.log(w) + log_likelyhood(self.map, p, obs))
+                lambda p, w: (
+                    p,
+                    jnp.log(w)
+                    + log_likelyhood(self.map, p, obs) * self.params.evidence_factor,
+                )
             )
         )
         ans1 = ans1_.resample(self.params.n_particles - self.params.n_from_gaus)
@@ -153,7 +159,7 @@ class state(eqx.Module):
                     return (
                         -guide_noisy.log_prob(p)
                         + gaus.log_prob(p)
-                        + log_likelyhood(self.map, p, obs)
+                        + log_likelyhood(self.map, p, obs) * self.params.evidence_factor
                     )
 
                 logits = guide_noisy.sample_batch(1000).map(lambda p: (p, log_l(p)))

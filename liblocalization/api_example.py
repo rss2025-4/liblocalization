@@ -85,6 +85,7 @@ class ExampleSimNode(Node):
     def map_callback(self, map_msg: OccupancyGrid):
         self.controller = self.controller_init(
             localization_params(
+                n_laser_points=1081,
                 map=map_msg,
                 marker_callback=self.marker_callback,
                 ground_truth_callback=self.ground_truth_callback,

@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import Any
 
 import numpy as np
 import tf_transformations
@@ -61,25 +62,33 @@ class Controller(LocalizationBase):
         msg.ranges = [1.0 for _ in range(self.cfg.n_laser_points)]
         return lidar_obs.from_ros(msg, 0.1)
 
-    def _update_time(self, new_time_: Time) -> float:
+    def _update_time(self, new_time_: Time, warn_tag: Any) -> float:
         new_time = time_msg_to_float(new_time_)
         ans = new_time - self._prev_time
-        if ans < 0:
-            print(colored(f"warning: time went backwards by: {ans}", "red"))
+        if ans < 0.0:
+            print(
+                colored(
+                    f"warning: ({warn_tag}) time went backwards by: {ans:.5f}", "red"
+                )
+            )
             ans = 0.0
+        if ans > 1.0:
+            print(colored(f"warning: ({warn_tag}) {ans:.2f}s with no messages", "red"))
+            ans = 1.0
+
         self._prev_time = new_time
         return ans
 
     def odom_callback(self, msg: Odometry) -> None:
         super().odom_callback(msg)
-        duration = self._update_time(msg.header.stamp)
+        duration = self._update_time(msg.header.stamp, self.odom_callback)
         self.last_twist = msg.twist.twist
         return self._twist(twist_t.from_ros(msg.twist.twist, duration, self._res))
 
     def lidar_callback(self, msg: LaserScan) -> None:
         super().lidar_callback(msg)
         assert msg.header.frame_id == self.cfg.laser_frame
-        duration = self._update_time(msg.header.stamp)
+        duration = self._update_time(msg.header.stamp, self.lidar_callback)
         if self.last_twist is not None:
             self._twist(twist_t.from_ros(self.last_twist, duration, self._res))
 
@@ -131,7 +140,7 @@ class Controller(LocalizationBase):
 
     def set_pose(self, pose: TransformStamped) -> None:
         super().set_pose(pose)
-        _ = self._update_time(pose.header.stamp)
+        _ = self._update_time(pose.header.stamp, self.set_pose)
         self._set_pose(self._pose_from_ros(pose))
 
     def _visualize(self, ctx: plot_ctx):
