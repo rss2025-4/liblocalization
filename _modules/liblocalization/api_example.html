@@ -158,7 +158,6 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">map_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_msg</span><span class="p">:</span> <span class="n">OccupancyGrid</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller_init</span><span class="p">(</span>
             <span class="n">localization_params</span><span class="p">(</span>
-                <span class="n">n_laser_points</span><span class="o">=</span><span class="mi">1081</span><span class="p">,</span>
                 <span class="nb">map</span><span class="o">=</span><span class="n">map_msg</span><span class="p">,</span>
                 <span class="n">marker_callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">marker_callback</span><span class="p">,</span>
                 <span class="n">ground_truth_callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ground_truth_callback</span><span class="p">,</span>
