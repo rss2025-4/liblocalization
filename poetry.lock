@@ -75,6 +75,21 @@ test-tox = ["click", "equinox ; sys_platform == \"linux\"", "jax[cpu] ; sys_plat
 test-tox-coverage = ["coverage (>=5.5)"]
 
 [[package]]
+name = "better-exceptions"
+version = "0.3.3"
+description = "Pretty and helpful exceptions, automatically"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "better_exceptions-0.3.3-py3-none-any.whl", hash = "sha256:9c70b1c61d5a179b84cd2c9d62c3324b667d74286207343645ed4306fdaad976"},
+    {file = "better_exceptions-0.3.3.tar.gz", hash = "sha256:e4e6bc18444d5f04e6e894b10381e5e921d3d544240418162c7db57e9eb3453b"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "sys_platform == \"win32\""}
+
+[[package]]
 name = "black"
 version = "25.1.0"
 description = "The uncompromising code formatter."
@@ -492,6 +507,21 @@ files = [
     {file = "decorator-5.2.1-py3-none-any.whl", hash = "sha256:d316bb415a2d9e2d2b3abcc4084c6502fc09240e292cd76a76afc106a1c8e04a"},
     {file = "decorator-5.2.1.tar.gz", hash = "sha256:65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360"},
 ]
+
+[[package]]
+name = "deprecation"
+version = "2.1.0"
+description = "A library to handle automated deprecations"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "deprecation-2.1.0-py2.py3-none-any.whl", hash = "sha256:a10811591210e1fb0e768a8c25517cabeabcba6f0bf96564f8ff45189f90b14a"},
+    {file = "deprecation-2.1.0.tar.gz", hash = "sha256:72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff"},
+]
+
+[package.dependencies]
+packaging = "*"
 
 [[package]]
 name = "docutils"
@@ -1060,16 +1090,17 @@ subdirectory = "cpp"
 
 [[package]]
 name = "libracecar"
-version = "0.0.1"
+version = "0.0.2"
 description = ""
 optional = false
 python-versions = ">=3.10, <3.13"
 groups = ["main"]
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 beartype = "^0.20.0"
+better-exceptions = "^0.3.3"
 colorama = "^0.4.6"
 equinox = "^0.11.12"
 ipython = "^8"
@@ -1089,10 +1120,8 @@ typeguard = "^4.4.2"
 unshare = "^0.22"
 
 [package.source]
-type = "git"
-url = "https://github.com/rss2025-4/libracecar.git"
-reference = "HEAD"
-resolved_reference = "c44814d608153f35af8ab226502fa3b6ac7c6992"
+type = "directory"
+url = "../libracecar"
 
 [[package]]
 name = "lz4"
@@ -2950,4 +2979,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.13"
-content-hash = "69f55920a468efe384f51fbbd898763c4cdb1bba30c04fe7a6a388e4d8af56e7"
+content-hash = "c40567d86af927e8f53166d9096c8830332b312cc4426b783771300daeab7141"

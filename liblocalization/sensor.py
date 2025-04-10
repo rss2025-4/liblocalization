@@ -1,69 +1,136 @@
+import math
+from functools import partial
+
+import equinox as eqx
 import jax
 import jax.numpy as jnp
+import numpy as np
+import numpyro
 import numpyro.distributions as dist
 from jax import lax, random
-from numpyro.distributions import constraints
+from jax.typing import ArrayLike
+from jaxtyping import Array, Bool, Float, Int, Int32
+from nav_msgs.msg import OccupancyGrid
+from numpyro.distributions import MixtureGeneral, constraints
+from tf_transformations import euler_from_quaternion
 
-from libracecar.batched import batched
+from _liblocalization_cpp import distance_2d as _distance_2d
+from libracecar.batched import batched, batched_zip
 from libracecar.numpyro_utils import (
+    mixturesamefamily_,
     normal_,
+    numpyro_param,
+    numpyro_scope_fn,
     prng_key_,
     trunc_normal_,
     vmap_seperate_seed,
 )
+from libracecar.plot import plot_ctx, plot_point, plot_style, plotable, plotmethod
 from libracecar.specs import position
 from libracecar.utils import (
+    bval,
+    debug_print,
+    ensure_not_weak_typed,
     flike,
+    fpair,
     fval,
+    ival,
+    jit,
+    pformat_repr,
+    round_clip,
+    tree_at_,
+    tree_select,
 )
-from libracecar.vector import unitvec
+from libracecar.vector import unitvec, vec
 
 from .map import _trace_ray_res, precomputed_map, trace_ray
 from .ros import lidar_obs
 
-d_max: float = 10.0
+
+class Condition(eqx.Module):
+    d_pixels: ArrayLike
+
+    @staticmethod
+    def from_traced_ray(ray: _trace_ray_res) -> "Condition":
+        d_pixels = lax.select(
+            ray.distance_to_nearest < 0.2,
+            on_true=ray.dist,
+            on_false=lax.stop_gradient(ray.dist),
+        )
+        d_pixels = lax.select(
+            d_pixels < 1.0, on_true=lax.stop_gradient(d_pixels), on_false=d_pixels
+        )
+        return Condition(d_pixels)
 
 
-def ray_model(ray: _trace_ray_res, res: float) -> dist.Distribution:
-    """
-    contain sensor model parameters (see source).
+class EmpiricalRayModel_one(eqx.Module):
+    """a ray distribution conditioned on ray traced distance"""
 
-    this functions is in METERS
-    """
-    # d_pixels = ray.dist
-    d_pixels = lax.select(
-        ray.distance_to_nearest < 0.2,
-        on_true=ray.dist,
-        on_false=lax.stop_gradient(ray.dist),
-    )
-    # d_pixels = lax.stop_gradient(ray.dist)
+    counts: Int[Array, "n"]
 
-    d_pixels = lax.select(
-        d_pixels < 1.0, on_true=lax.stop_gradient(d_pixels), on_false=d_pixels
-    )
+    def _as_dist(self) -> dist.Distribution:
+        counts = self.counts
+        n = len(counts)
 
-    d = d_pixels * res
-    d = jnp.clip(d, 0.0, d_max)
+        d = (counts / jnp.sum(counts)) * 0.9 + (jnp.ones(n) / n) * 0.1
+        return dist.CategoricalProbs(probs=d)
 
-    # sensor is modeled as a mixture of theses distributions
-    parts: list[tuple[dist.Distribution, flike]] = [
-        (trunc_normal_(d, 0.2, 0.0, d_max), 1.0),
-        (
-            dist.Delta(d_max),
-            0.01 + d / d_max + jnp.maximum(0.0, ((d / d_max) - 0.9) * 20),
-        ),
-        (trunc_normal_(d, 2.5, 0.0, d_max), 0.2),
-        (dist.Uniform(0.0, d_max), 0.2),
-    ]
-    probs = jnp.array([p for _, p in parts])
-    return dist.MixtureGeneral(
-        dist.Categorical(probs=probs / jnp.sum(probs)),
-        [d for d, _ in parts],
-        support=constraints.nonnegative,
-    )
+    def _round_obs(self, obs: fval):
+        return round_clip(obs / 1.0, 0, len(self.counts))
+
+    def log_prob(self, obs: fval) -> fval:
+        obs_ = self._round_obs(obs)
+
+        cached: Array = jax.vmap(self._as_dist().log_prob)(jnp.arange(len(self.counts)))
+        return cached.at[obs_].get(mode="promise_in_bounds")
+
+
+class EmpiricalRayModel(eqx.Module):
+
+    parts: batched[EmpiricalRayModel_one]
+
+    __repr__ = pformat_repr
+
+    def _round_cond(self, c: Condition):
+        return round_clip(c.d_pixels / 1.0, 0, len(self.parts))
+
+    def log_prob(self, c: Condition, obs: fval) -> fval:
+        cond = self._round_cond(c)
+        # print(jax.make_jaxpr(lambda: self.parts.map(lambda p: p.log_prob(obs)))())
+
+        cached = self.parts.map(lambda p: p.log_prob(obs))
+        # cached = jax.pure_callback(
+        #     lambda v: (print("computed cached values!") or v), cached, cached
+        # )
+        # cached = jax.pure_callback(lambda v: v, cached, cached)
+        return cached.uf.at[cond].get(mode="promise_in_bounds")
+
+    @staticmethod
+    def empty(cond_bins: int, measured_bins: int):
+        return EmpiricalRayModel(
+            batched.create(
+                EmpiricalRayModel_one(jnp.zeros(measured_bins, dtype=jnp.int32)),
+            ).repeat(cond_bins)
+        )
+
+    def push_counts(self, added: batched[tuple[Condition, fval]]):
+        clipped = added.tuple_map(
+            lambda c, obs: (
+                self._round_cond(c),
+                self.parts.static_map(lambda p: p._round_obs(obs)),
+            )
+        )
+        cs, obss = clipped.uf
+        self = tree_at_(
+            lambda me: me.parts.uf.counts,
+            self,
+            replace_fn=lambda x: x.at[cs, obss].add(1),
+        )
+        return self
 
 
 def log_likelyhood(
+    model: EmpiricalRayModel,
     map: precomputed_map,
     pos: position,
     observations: batched[lidar_obs],
@@ -76,14 +143,20 @@ def log_likelyhood(
     def handle_batch(obs: batched[lidar_obs]):
         ang = obs.map(lambda x: x.angle.to_angle()).mean().unwrap()
         ray_ang = pos.rot.mul_unit(unitvec.from_angle(ang))
+
         ray = trace_ray(map, pos.tran, ray_ang)
-        ray_dist = ray_model(ray, map.res)
-        log_probs = jnp.mean(
-            obs.map(
-                lambda x: ray_dist.log_prob(jnp.clip(x.dist * map.res, 0.0, d_max))
-            ).unflatten()
-        )
-        return log_probs * min(len(obs), 5)
+
+        log_probs = obs.map(
+            lambda x:
+            # print(
+            #     "model.log_prob",
+            #     jax.make_jaxpr(model.log_prob)(Condition.from_traced_ray(ray), x.dist),
+            # )
+            # or
+            model.log_prob(Condition.from_traced_ray(ray), x.dist)
+        ).unflatten()
+
+        return jnp.mean(log_probs)
 
     ans = jax.vmap(handle_batch)(
         observations[: n_traces * part_len].reshape(n_traces, part_len)

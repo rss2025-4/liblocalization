@@ -157,7 +157,7 @@ class precomputed_map(eqx.Module):
 
 
 def _distance_2d_cb(w: int, h: int, data: Float[Array, "hw"]):
-    print("_distance_2d_cb: callback")
+    print("_distance_2d_cb: callback", w, h)
     data_np = np.array(data, np.float64)
     return _distance_2d(data_np, w, h, 1.0, 0.0)
 
@@ -324,6 +324,9 @@ def trace_ray(
         loop_res = step(loop_res)
 
     ans_s = loop_res.coord
+
+    # make this differentiable
+
     line_ang_s = loop_res.data.angle
 
     line_ang_s = tree_select(
@@ -331,10 +334,6 @@ def trace_ray(
         on_true=line_ang_s,
         on_false=line_ang_s.mul_unit(unitvec(lax.complex(0.0, 1.0))),
     )
-
-    # return ans_s
-
-    # make this differentiable
 
     coord_relative_to_line = (coord - ans_s) * line_ang_s.invert()
     transformed_ang = angle * line_ang_s.invert()
@@ -354,6 +353,7 @@ def trace_ray(
     # )
 
     ans = ans_s + (ans - lax.stop_gradient(ans))
+    ans_dist = jnp.abs((ans_s - coord)._v) + (ans_dist - lax.stop_gradient(ans_dist))
 
     return _trace_ray_res(
         coord=coord,

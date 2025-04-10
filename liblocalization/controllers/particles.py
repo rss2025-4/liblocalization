@@ -1,6 +1,7 @@
 import math
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 import equinox as eqx
@@ -42,7 +43,13 @@ from ..map import precompute, precomputed_map, trace_ray
 from ..motion import dummy_motion_model, motion_model, twist_t
 from ..priors import gaussian, particles
 from ..ros import lidar_obs
-from ..sensor import log_likelyhood
+from ..sensor import Condition, EmpiricalRayModel, log_likelyhood
+from ..stats import (
+    datapoint,
+    default_stats_dir,
+    ray_model_from_pkl,
+    stats_state,
+)
 
 
 @dataclass
@@ -57,6 +64,8 @@ class particles_params:
 
     evidence_factor: float = 1.0
 
+    stats_path: Path = default_stats_dir
+
 
 class state(eqx.Module):
     res: float = eqx.field(static=True)
@@ -64,6 +73,8 @@ class state(eqx.Module):
 
     prior: particles
     map: precomputed_map
+    sensor_model: EmpiricalRayModel
+    stats: stats_state
 
     rng_key: Array = random.PRNGKey(0)
 
@@ -87,7 +98,7 @@ class state(eqx.Module):
                     p.as_arr(),
                     jnp.diag(
                         jnp.array(
-                            [1.0 / self.res, 1.0 / self.res, 45.0 / 360 * 2 * math.pi]
+                            [2.0 / self.res, 2.0 / self.res, 45.0 / 360 * 2 * math.pi]
                         )
                         ** 2
                     ),
@@ -106,6 +117,9 @@ class state(eqx.Module):
 
             if self.params.use_motion_model:
                 new_prior = self.prior.map(lambda x: x + motion_model(twist))
+                new_prior = new_prior.map(
+                    lambda x: x + dummy_motion_model(twist.time, self.res, 0.2)
+                )
             else:
                 new_prior = self.prior.map(
                     lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
@@ -124,10 +138,10 @@ class state(eqx.Module):
             x = obs[random.randint(prng_key_(), (), 0, len(obs))].unwrap()
             return trace_ray(self.map, pos.tran, pos.rot.mul_unit(x.angle)).plot(x.dist)
 
-        return vmap_seperate_seed(plot_one, axis_size=100)()
+        return vmap_seperate_seed(plot_one, axis_size=50)()
 
     def _lidar(self, obs: batched[lidar_obs]):
-        ctx = plot_ctx.create(3000)
+        ctx = plot_ctx.create(self.params.plot_points_limit)
         ctx += self.prior.plot(20, plot_style(color=(1.0, 0.0, 0.0)))
 
         ans1_ = particles.from_logits(
@@ -135,7 +149,8 @@ class state(eqx.Module):
                 lambda p, w: (
                     p,
                     jnp.log(w)
-                    + log_likelyhood(self.map, p, obs) * self.params.evidence_factor,
+                    + log_likelyhood(self.sensor_model, self.map, p, obs)
+                    * self.params.evidence_factor,
                 )
             )
         )
@@ -159,7 +174,8 @@ class state(eqx.Module):
                     return (
                         -guide_noisy.log_prob(p)
                         + gaus.log_prob(p)
-                        + log_likelyhood(self.map, p, obs) * self.params.evidence_factor
+                        + log_likelyhood(self.sensor_model, self.map, p, obs)
+                        * self.params.evidence_factor
                     )
 
                 logits = guide_noisy.sample_batch(1000).map(lambda p: (p, log_l(p)))
@@ -192,6 +208,12 @@ class state(eqx.Module):
         with numpyro.handlers.seed(rng_seed=key):
             return self._lidar(msg())
 
+    def update_stats(
+        self, true_pos_pixels: lazy[position], lidar: lazy[batched[lidar_obs]]
+    ):
+        stats, _ = self.stats.update(true_pos_pixels, lidar)
+        return tree_at_(lambda me: me.stats, self, stats), None
+
 
 class _particles_model(Controller):
     def __init__(self, cfg: localization_params, params: particles_params):
@@ -205,16 +227,33 @@ class _particles_model(Controller):
                 state.twist, self._lazy_twist_ex(), self._plot_ground_truth()
             ),
             dispatch_spec(state.lidar, self._lazy_lidar_ex()),
+            dispatch_spec(
+                state.update_stats,
+                self._pose_from_ros(TransformStamped()),
+                self._lazy_lidar_ex(),
+            ),
         )
-        self.dispatcher.run_with_setup(self._init_state)
+        self.dispatcher.run_with_setup(
+            self._init_state, ray_model_from_pkl(self.params.stats_path)
+        )
         # wait for dispatcher to start
         _ = self._get_pose()
 
-    def _init_state(self):
+    def _init_state(self, sensor_model: EmpiricalRayModel):
+        precomp = precompute(self.grid)
         return state(
             res=self._res,
             params=self.params,
-            map=precompute(self.grid),
+            map=precomp,
+            sensor_model=sensor_model,
+            stats=stats_state(
+                out_dir=self.params.stats_path,
+                map=precomp,
+                data_idx=jnp.array(0),
+                data=batched.create(
+                    datapoint(Condition(0.0), jnp.array(0.0)),
+                ).repeat(32 * 100 * 50 * 10),
+            ),
             prior=particles.from_samples(
                 batched.create(position.zero()).repeat(self.params.n_particles)
             ),
@@ -226,22 +265,27 @@ class _particles_model(Controller):
     def _get_particles(self) -> batched[position]:
         return self.dispatcher.process(state.get_particles)
 
-    def _set_pose(self, pose) -> None:
+    def _set_pose(self, pose, time) -> None:
         return self.dispatcher.process(state.set_pose, pose)
 
-    def _twist(self, twist):
+    def _twist(self, twist, time):
         with timer.create() as t:
             gt = self._plot_ground_truth()
             ctx = self.dispatcher.process(state.twist, twist, gt)
             # self._visualize(ctx)
             # print(f"twist: {t.val} seconds")
 
-    def _lidar(self, obs):
+    def _lidar(self, obs, time):
         with timer.create() as t:
             ctx = self.dispatcher.process(state.lidar, obs)
+
+            gt = self._ground_truth(time)
+            if gt is not None:
+                self.dispatcher.process(state.update_stats, gt, obs)
+
             jax.block_until_ready(ctx)
+            print(f"lidar: {t.val} seconds")
             self._visualize(ctx)
-            # print(f"lidar: {t.val} seconds")
 
 
 def particles_model(

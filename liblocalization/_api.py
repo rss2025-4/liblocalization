@@ -40,13 +40,13 @@ class Controller(LocalizationBase):
     def _get_pose(self) -> position: ...
 
     @abstractmethod
-    def _set_pose(self, pose: lazy[position]) -> None: ...
+    def _set_pose(self, pose: lazy[position], time: float) -> None: ...
 
     @abstractmethod
-    def _twist(self, twist: lazy[twist_t]) -> None: ...
+    def _twist(self, twist: lazy[twist_t], time: float) -> None: ...
 
     @abstractmethod
-    def _lidar(self, obs: lazy[batched[lidar_obs]]) -> None: ...
+    def _lidar(self, obs: lazy[batched[lidar_obs]], time: float) -> None: ...
 
     def _get_particles(self) -> batched[position]:
         return batched.create(self._get_pose()).reshape(1)
@@ -83,16 +83,24 @@ class Controller(LocalizationBase):
         super().odom_callback(msg)
         duration = self._update_time(msg.header.stamp, self.odom_callback)
         self.last_twist = msg.twist.twist
-        return self._twist(twist_t.from_ros(msg.twist.twist, duration, self._res))
+        return self._twist(
+            twist_t.from_ros(msg.twist.twist, duration, self._res),
+            time_msg_to_float(msg.header.stamp),
+        )
 
     def lidar_callback(self, msg: LaserScan) -> None:
         super().lidar_callback(msg)
         assert msg.header.frame_id == self.cfg.laser_frame
         duration = self._update_time(msg.header.stamp, self.lidar_callback)
         if self.last_twist is not None:
-            self._twist(twist_t.from_ros(self.last_twist, duration, self._res))
+            self._twist(
+                twist_t.from_ros(self.last_twist, duration, self._res),
+                time_msg_to_float(msg.header.stamp),
+            )
 
-        self._lidar(lidar_obs.from_ros(msg, self._res))
+        self._lidar(
+            lidar_obs.from_ros(msg, self._res), time_msg_to_float(msg.header.stamp)
+        )
 
     def get_pose(self) -> TransformStamped:
         ans = self._get_pose()
@@ -141,7 +149,7 @@ class Controller(LocalizationBase):
     def set_pose(self, pose: TransformStamped) -> None:
         super().set_pose(pose)
         _ = self._update_time(pose.header.stamp, self.set_pose)
-        self._set_pose(self._pose_from_ros(pose))
+        self._set_pose(self._pose_from_ros(pose), time_msg_to_float(pose.header.stamp))
 
     def _visualize(self, ctx: plot_ctx):
         m = Marker()
@@ -155,12 +163,24 @@ class Controller(LocalizationBase):
         ctx.execute(m)
         self.cfg.marker_callback(m)
 
-    def _ground_truth(self) -> lazy[position] | None:
+    def _ground_truth(
+        self, reference_time: float | None = None, allowed_offset: float = 0.03
+    ) -> lazy[position] | None:
         t = self.cfg.ground_truth_callback()
         if t is None:
             return
         assert t.child_frame_id == self.cfg.laser_frame
         assert t.header.frame_id == self.cfg.map_frame
+        if reference_time is not None:
+            time_diff = reference_time - time_msg_to_float(t.header.stamp)
+            if abs(time_diff) > allowed_offset:
+                print(
+                    colored(
+                        f"ground truth is behind by {time_diff} seconds; discarding.",
+                        "red",
+                    ),
+                )
+                return None
         return self._pose_from_ros(t)
 
     def _plot_ground_truth(self) -> lazy[plotable]:

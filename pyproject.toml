@@ -15,15 +15,20 @@ build-backend = "poetry.core.masonry.api"
 profile = "black"
 known_first_party = ["liblocalization", "libracecar", "_liblocalization_cpp"]
 
+[tool.pyright]
+exclude = ["**/result*", ".cache"]
+typeCheckingMode = "standard"
+
 [tool.poetry.dependencies]
-libracecar = { git = "https://github.com/rss2025-4/libracecar.git" }
-# libracecar = { path = "/home/alan/6.4200/libracecar/", develop = true }
+# libracecar = { git = "https://github.com/rss2025-4/libracecar.git" }
+libracecar = { path = "/home/alan/6.4200/libracecar/", develop = true }
 liblocalization-cpp = { git = "https://github.com/rss2025-4/liblocalization.git", subdirectory = "cpp" }
 # liblocalization-cpp = { path = "./cpp" }
 
 jax = "^0.5.3"
 rosbags = "^0.10.9"
 odom-transformer = { git = "https://github.com/Alan-Chen99/odom_transformer.git" }
+deprecation = "^2.1.0"
 
 [tool.poetry.group.gpu]
 optional = true

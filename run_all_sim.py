@@ -16,8 +16,9 @@ def main():
         ExampleSimNode,
         deterministic_motion_tracker,
         particles_model,
+        particles_params,
     )
-    from liblocalization.controllers.particles import particles_params
+    from liblocalization.controllers.stats import stats_params
     from libracecar.test_utils import proc_manager
 
     jax.config.update("jax_platform_name", "cpu")
@@ -36,13 +37,21 @@ def main():
         # env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
     )
 
-    procs.ros_node_thread(
-        ExampleSimNode,
-        particles_model(particles_params(plot_level=10, n_particles=500)),
-    )
-    # procs.ros_node_thread(ExampleSimNode, deterministic_motion_tracker)
+    # procs.ros_node_thread(
+    #     ExampleSimNode,
+    #     particles_model(
+    #         particles_params(
+    #             plot_level=10,
+    #             n_particles=500,
+    #             use_motion_model=False,
+    #         )
+    #     ),
+    # )
 
-    time.sleep(2.0)
+    # procs.ros_node_thread(ExampleSimNode, deterministic_motion_tracker)
+    procs.ros_node_subproc(ExampleSimNode, stats_params().build)
+
+    time.sleep(3.0)
 
     procs.ros_launch("racecar_simulator", "simulate.launch.xml", f"map:={map}")
 

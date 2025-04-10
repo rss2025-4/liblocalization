@@ -66,7 +66,7 @@ class ExampleSimNode(Node):
         return self.controller
 
     def pose_callback(self, msg: PoseWithCovarianceStamped):
-        if self.controller is not None:
+        if controller := self.get_controller():
             pos_laser = self.odom_transformer.transform_pose(msg.pose)
 
             t = TransformStamped()
@@ -80,7 +80,7 @@ class ExampleSimNode(Node):
 
             t.transform.rotation = pos_laser.pose.orientation
 
-            self.controller.set_pose(t)
+            controller.set_pose(t)
 
     def map_callback(self, map_msg: OccupancyGrid):
         self.controller = self.controller_init(
