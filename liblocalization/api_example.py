@@ -3,6 +3,7 @@ from typing import Callable
 import tf2_ros
 from nav_msgs.msg import OccupancyGrid, Odometry
 from odom_transformer.transformer import Transformer
+from rclpy import Context
 from rclpy.node import Node
 from rclpy.time import Time
 from sensor_msgs.msg import LaserScan
@@ -21,9 +22,11 @@ from liblocalization.controllers.particles import particles_model, particles_par
 
 class ExampleSimNode(Node):
     def __init__(
-        self, controller_init: Callable[[localization_params], LocalizationBase]
+        self,
+        controller_init: Callable[[localization_params], LocalizationBase],
+        context: Context | None = None,
     ):
-        super().__init__("ExampleSimNode")
+        super().__init__("ExampleSimNode", context=context)
 
         self.controller_init = controller_init
         self.controller = None

@@ -1,8 +1,10 @@
+from dataclasses import dataclass
 from typing import Callable
 
 import tf2_ros
 from nav_msgs.msg import OccupancyGrid, Odometry
 from odom_transformer.transformer import Transformer
+from rclpy import Context
 from rclpy.node import Node
 from rclpy.time import Time
 from sensor_msgs.msg import LaserScan
@@ -19,11 +21,27 @@ from liblocalization.api import LocalizationBase, localization_params
 from liblocalization.controllers.particles import particles_model, particles_params
 
 
-class RosbagNode(Node):
+@dataclass
+class RealNodeConfig:
+
+    n_laser_points: int = 1081
+
+    ground_truth_confidence_threshold: float = -3.5
+
+    laser_frame: str = "laser_model"
+
+
+class RealNode(Node):
     def __init__(
-        self, controller_init: Callable[[localization_params], LocalizationBase]
+        self,
+        controller_init: Callable[[localization_params], LocalizationBase],
+        *,
+        cfg: RealNodeConfig = RealNodeConfig(),
+        context: Context | None = None,
     ):
-        super().__init__("RosbagNode")
+        super().__init__(type(self).__qualname__, context=context)
+
+        self.cfg = cfg
 
         self.controller_init = controller_init
         self.controller = None
@@ -50,15 +68,17 @@ class RosbagNode(Node):
         self.odom_transformer = None
 
     def map_callback(self, map_msg: OccupancyGrid):
-        self.controller = self.controller_init(
-            localization_params(
-                n_laser_points=1081,
-                map=map_msg,
-                marker_callback=self.marker_callback,
-                ground_truth_callback=self.ground_truth_callback,
+        if self.controller is None:
+            self.controller = self.controller_init(
+                localization_params(
+                    n_laser_points=self.cfg.n_laser_points,
+                    laser_frame=self.cfg.laser_frame,
+                    map=map_msg,
+                    marker_callback=self.marker_callback,
+                    ground_truth_callback=self.ground_truth_callback,
+                )
             )
-        )
-        assert isinstance(self.controller, LocalizationBase)
+            assert isinstance(self.controller, LocalizationBase)
 
     def get_controller(self) -> LocalizationBase | None:
         if self.controller is None:
@@ -68,7 +88,7 @@ class RosbagNode(Node):
             try:
                 self.odom_transformer = Transformer(
                     self.tfBuffer.lookup_transform(
-                        "laser", "base_link", Time()
+                        self.cfg.laser_frame, "base_link", Time()
                     ).transform
                 )
             except Exception as e:
@@ -86,7 +106,7 @@ class RosbagNode(Node):
 
             t = TransformStamped()
             t.header = msg.header
-            t.child_frame_id = "laser"
+            t.child_frame_id = self.cfg.laser_frame
 
             pos = pos_laser.pose.position
             t.transform.translation.x = pos.x
@@ -98,6 +118,8 @@ class RosbagNode(Node):
             controller.set_pose(t)
 
     def odom_callback(self, msg: Odometry):
+        print("odom_callback", msg.header.frame_id)
+
         if controller := self.get_controller():
             assert self.odom_transformer is not None
 
@@ -107,7 +129,7 @@ class RosbagNode(Node):
             msg.twist.twist.linear.x = -msg.twist.twist.linear.x
             msg.twist.twist.angular.z = -msg.twist.twist.angular.z
 
-            odom = Odometry(header=msg.header, child_frame_id="laser")
+            odom = Odometry(header=msg.header, child_frame_id=self.cfg.laser_frame)
             odom.pose = self.odom_transformer.transform_pose(msg.pose)
             odom.twist = self.odom_transformer.transform_twist(msg.twist)
 
@@ -120,6 +142,12 @@ class RosbagNode(Node):
             # print("particles:", controller.get_particles())
 
     def lidar_callback(self, msg: LaserScan):
+
+        print("lidar_callback", msg.header.frame_id)
+
+        # if msg.header.frame_id == "laser_model":
+        #     msg.header.frame_id = "laser"
+
         if controller := self.get_controller():
 
             # TODO: real messages have no timestamps
@@ -134,19 +162,19 @@ class RosbagNode(Node):
         if controller := self.get_controller():
             pose = controller.get_pose()
             conf = controller.get_confidence()
-            if conf > -3.5:
+            if conf > self.cfg.ground_truth_confidence_threshold:
                 return pose
 
 
 def examplemain():
     """examle (deterministic_motion_tracker)"""
     rclpy.init()
-    rclpy.spin(RosbagNode(deterministic_motion_tracker))
+    rclpy.spin(RealNode(deterministic_motion_tracker))
     assert False, "unreachable"
 
 
 def examplemain2():
     """examle (particles_model)"""
     rclpy.init()
-    rclpy.spin(RosbagNode(particles_model(particles_params(n_particles=1000))))
+    rclpy.spin(RealNode(particles_model(particles_params(n_particles=1000))))
     assert False, "unreachable"

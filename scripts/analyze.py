@@ -31,6 +31,7 @@ from liblocalization.sensor import EmpiricalRayModel
 from liblocalization.stats import (
     datapoint,
     load_from_pkl,
+    models_base_dir,
     ray_model_from_pkl,
     stats_base_dir,
     stats_state,
@@ -84,61 +85,88 @@ def get_one(dir: Path) -> np.ndarray:
     return np.array(model.parts.map(lambda x: x.probs(0.01)).uf).T
 
 
+def dump_model():
+    out_path = models_base_dir / "model3.pkl"
+
+    model = ray_model_from_pkl(
+        [
+            #
+            stats_base_dir / "sim",
+            stats_base_dir / "rosbags_lidar_fixed2",
+        ]
+    )
+    out_path.write_bytes(pickle.dumps(model))
+
+
 def plot_counts():
     # model = ray_model_from_pkl(stats_base_dir / "sim")
     model = ray_model_from_pkl(
         [
-            # stats_base_dir / "rosbag",
-            stats_base_dir / "sim",
             #
+            stats_base_dir / "sim",
+            stats_base_dir / "rosbags_lidar_fixed2",
         ]
     )
 
-    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
 
-    norm = LogNorm()
+    ax.set_aspect("equal")
 
-    def do_one(ax: Axes, data: np.ndarray, title: str):
-
-        ax.set_title(title)
-        ax.set_aspect("equal")
-        ax.set_xlabel("f=ray_est(*, *) (pixels)")
-        ax.set_ylabel("lidar observation (O*) (pixels)")
-
-        cax = ax.imshow(
-            data,
-            cmap="viridis",
-            origin="lower",
-            norm=norm,
-        )
-        return cax
-
-    cax = do_one(
-        axes[0][0],
-        data=get_one(stats_base_dir / "sim"),
-        title="likelihood∗ for lidar in sim",
+    cax = ax.imshow(
+        np.array(model.parts.uf.counts + 1).T,
+        cmap="viridis",
+        origin="lower",
+        norm=LogNorm(),
     )
-    cax = do_one(
-        axes[0][1],
-        data=get_one(stats_base_dir / "sim")[:100, :100],
-        title="likelihood∗ for lidar in sim (zoomed in)",
-    )
+    fig.colorbar(cax, ax=ax)
+    plt.show()
 
-    cax = do_one(
-        axes[1][0],
-        data=get_one(stats_base_dir / "rosbag"),
-        title="likelihood∗ for lidar in real",
-    )
-    cax = do_one(
-        axes[1][1],
-        data=get_one(stats_base_dir / "rosbag")[:100, :100],
-        title="likelihood∗ for lidar in real (zoomed in)",
-    )
+    # fig, axes = plt.subplots(2, 2, figsize=(10, 8))
 
-    fig.tight_layout()
-    fig.colorbar(cax, ax=axes, orientation="vertical")
+    # norm = LogNorm()
 
-    fig.savefig("likelihood_sim.png", dpi=300)
-    plt.close(fig)
+    # def do_one(ax: Axes, data: np.ndarray, title: str):
 
-    # plt.show()
+    #     ax.set_title(title)
+    #     ax.set_aspect("equal")
+    #     ax.set_xlabel("f=ray_est(*, *) (pixels)")
+    #     ax.set_ylabel("lidar observation (O*) (pixels)")
+
+    #     cax = ax.imshow(
+    #         data,
+    #         cmap="viridis",
+    #         origin="lower",
+    #         norm=norm,
+    #     )
+    #     return cax
+
+    # cax = do_one(
+    #     axes[0][0],
+    #     data=get_one(stats_base_dir / "sim"),
+    #     title="likelihood∗ for lidar in sim",
+    # )
+    # cax = do_one(
+    #     axes[0][1],
+    #     data=get_one(stats_base_dir / "sim")[:100, :100],
+    #     title="likelihood∗ for lidar in sim (zoomed in)",
+    # )
+
+    # cax = do_one(
+    #     axes[1][0],
+    #     data=get_one(stats_base_dir / "rosbag"),
+    #     title="likelihood∗ for lidar in real",
+    # )
+    # cax = do_one(
+    #     axes[1][1],
+    #     data=get_one(stats_base_dir / "rosbag")[:100, :100],
+    #     title="likelihood∗ for lidar in real (zoomed in)",
+    # )
+
+    # fig.tight_layout()
+    # fig.colorbar(cax, ax=axes, orientation="vertical")
+
+    # fig.savefig("likelihood_sim.png", dpi=300)
+    # plt.close(fig)
+
+    # # plt.show()

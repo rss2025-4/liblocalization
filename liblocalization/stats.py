@@ -59,6 +59,7 @@ from .ros import lidar_obs
 from .sensor import Condition, EmpiricalRayModel
 
 stats_base_dir = Path(__file__).parent.parent / "stats"
+models_base_dir = Path(__file__).parent.parent / "models"
 
 
 class datapoint(eqx.Module):
@@ -82,7 +83,7 @@ def apply_noise(p: position, res: float):
 
 
 class stats_state(eqx.Module):
-    out_dir: Path = eqx.field(static=True)
+    out_dir: Path | None = eqx.field(static=True)
 
     map: precomputed_map
 
@@ -108,9 +109,10 @@ class stats_state(eqx.Module):
             return
 
     def _do_write(self):
-        io_callback_(partial(stats_state._write_data_cb, self.out_dir))(
-            self.data_idx, self.data
-        )
+        if self.out_dir is not None:
+            io_callback_(partial(stats_state._write_data_cb, self.out_dir))(
+                self.data_idx, self.data
+            )
         return tree_at_(lambda me: me.data_idx, self, 0)
 
     def update(self, true_pos_pixels: lazy[position], lidar: lazy[batched[lidar_obs]]):

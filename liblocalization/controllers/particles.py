@@ -1,4 +1,5 @@
 import math
+import pickle
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,7 +15,7 @@ from jax import Array, random
 from tf2_ros import TransformStamped
 
 from libracecar.batched import batched, batched_zip
-from libracecar.jax_utils import dispatch_spec, divide_x_at_zero, jax_jit_dispatcher
+from libracecar.jax_utils import dispatch, divide_x_at_zero, jax_jit_dispatcher
 from libracecar.numpyro_utils import (
     batched_vmap_with_rng,
     prng_key_,
@@ -67,8 +68,10 @@ class particles_params:
 
     evidence_factor: float = 1.0
 
-    stats_in_dir: Path | list[Path] = stats_base_dir / "default"
-    stats_out_dir: Path = stats_base_dir / "default"
+    stats_in_dir: Path | list[Path] | None = None
+    stats_out_dir: Path | None = stats_base_dir / "default"
+
+    model_path: Path | None = None
 
     def __call__(self, cfg: localization_params) -> LocalizationBase:
         return _particles_model(cfg, self)
@@ -244,26 +247,31 @@ class state(eqx.Module):
 
 class _particles_model(Controller):
     def __init__(self, cfg: localization_params, params: particles_params):
+        global ct
         super().__init__(cfg)
         self.params = params
         self.dispatcher = jax_jit_dispatcher(
-            dispatch_spec(state.get_pose),
-            dispatch_spec(state.get_particles),
-            dispatch_spec(state.get_confidence),
-            dispatch_spec(state.set_pose, self._lazy_position_ex()),
-            dispatch_spec(
-                state.twist, self._lazy_twist_ex(), self._plot_ground_truth()
-            ),
-            dispatch_spec(state.lidar, self._lazy_lidar_ex()),
-            dispatch_spec(
-                state.update_stats,
+            dispatch(state.get_pose)(),
+            dispatch(state.get_particles)(),
+            dispatch(state.get_confidence)(),
+            dispatch(state.set_pose)(self._lazy_position_ex()),
+            dispatch(state.twist)(self._lazy_twist_ex(), self._plot_ground_truth()),
+            dispatch(state.lidar)(self._lazy_lidar_ex()),
+            dispatch(state.update_stats)(
                 self._pose_from_ros(TransformStamped()),
                 self._lazy_lidar_ex(),
             ),
         )
-        self.dispatcher.run_with_setup(
-            self._init_state, ray_model_from_pkl(self.params.stats_in_dir)
-        )
+        assert (self.params.stats_in_dir is None) != (self.params.model_path is None)
+
+        if self.params.stats_in_dir is not None:
+            model = ray_model_from_pkl(self.params.stats_in_dir)
+        else:
+            assert self.params.model_path is not None
+            assert self.params.model_path.exists()
+            model = pickle.loads(self.params.model_path.read_bytes())
+
+        self.dispatcher.run_with_setup(self._init_state, model)
         # wait for dispatcher to start
         _ = self._get_pose()
 

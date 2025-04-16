@@ -1,6 +1,7 @@
 import abc
 from abc import abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 import numpy as np
@@ -65,7 +66,10 @@ class LocalizationBase(abc.ABC):
 
         must have a correct timestamp.
         """
-        assert msg.header.frame_id == self.cfg.laser_frame
+        assert msg.header.frame_id == self.cfg.laser_frame, (
+            msg.header.frame_id,
+            self.cfg.laser_frame,
+        )
         assert (
             len(msg.ranges) == self.cfg.n_laser_points
         ), f"expected {self.cfg.n_laser_points} laser points, got {len(msg.ranges)}"
