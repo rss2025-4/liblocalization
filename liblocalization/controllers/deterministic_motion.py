@@ -1,5 +1,6 @@
 import math
 import time
+from dataclasses import dataclass
 
 import equinox as eqx
 import jax
@@ -11,7 +12,9 @@ from jax import Array, random
 from libracecar.batched import batched
 from libracecar.jax_utils import dispatch_spec, divide_x_at_zero, jax_jit_dispatcher
 from libracecar.numpyro_utils import (
+    prng_key_,
     trunc_normal_,
+    vmap_seperate_seed,
 )
 from libracecar.plot import plot_ctx, plot_style, plotable
 from libracecar.specs import position
@@ -30,15 +33,26 @@ from libracecar.vector import unitvec, vec
 
 from .._api import Controller
 from ..api import LocalizationBase, localization_params
-from ..map import Grid
+from ..map import Grid, precompute, precomputed_map, trace_ray
 from ..motion import deterministic_position, twist_t
 from ..priors import gaussian
 from ..ros import lidar_obs
 
 
+@dataclass
+class deterministic_motion_params:
+    """localization implementation that only uses motion model"""
+
+    plot_points_limit: int = 1000
+
+    def __call__(self, cfg: localization_params) -> LocalizationBase:
+        return _deterministic_motion_tracker(cfg, self)
+
+
 class state(eqx.Module):
-    res: float = eqx.field(static=True)
-    grid: Grid
+    params: deterministic_motion_params = eqx.field(static=True)
+
+    map: precomputed_map
 
     pos: position
     noisy_pos: gaussian
@@ -83,14 +97,34 @@ class state(eqx.Module):
             # )
             return self, ctx
 
+    def lidar(self, msg: lazy[batched[lidar_obs]]):
+        self, key = self.get_seed()
+        with numpyro.handlers.seed(rng_seed=key):
+            return self._lidar(msg())
+
+    def plot_computed_rays(self, obs: batched[lidar_obs]) -> plotable:
+        pos = self.get_pose()[1]
+
+        def plot_one():
+            x = obs[random.randint(prng_key_(), (), 0, len(obs))].unwrap()
+            return trace_ray(self.map, pos.tran, pos.rot.mul_unit(x.angle)).plot(x.dist)
+
+        return vmap_seperate_seed(plot_one, axis_size=50)()
+
+    def _lidar(self, obs: batched[lidar_obs]):
+        ctx = plot_ctx.create(self.params.plot_points_limit)
+        ctx += self.pos.plot_as_seg()
+        ctx += self.plot_computed_rays(obs)
+        return self, ctx
+
 
 class _deterministic_motion_tracker(Controller):
-    def __init__(self, cfg: localization_params):
+    def __init__(self, cfg: localization_params, params: deterministic_motion_params):
         super().__init__(cfg)
 
         init_state = state(
-            self._res,
-            self.grid,
+            params,
+            precompute(self.grid),
             position.zero(),
             gaussian.from_mean_cov(
                 jnp.zeros(3),
@@ -100,6 +134,7 @@ class _deterministic_motion_tracker(Controller):
         self.dispatcher = jax_jit_dispatcher(
             dispatch_spec(state.get_pose),
             dispatch_spec(state.set_pose, self._lazy_position_ex()),
+            dispatch_spec(state.lidar, self._lazy_lidar_ex()),
             dispatch_spec(
                 state.twist, self._lazy_twist_ex(), self._plot_ground_truth()
             ),
@@ -109,21 +144,23 @@ class _deterministic_motion_tracker(Controller):
     def _get_pose(self):
         return self.dispatcher.process(state.get_pose)
 
-    def _set_pose(self, pose) -> None:
+    def _set_pose(self, pose, time) -> None:
         return self.dispatcher.process(state.set_pose, pose)
 
-    def _twist(self, twist):
+    def _twist(self, twist, time):
         with timer.create() as t:
             gt = self._plot_ground_truth()
             ctx = self.dispatcher.process(state.twist, twist, gt)
-            self._visualize(ctx)
+            # jax.block_until_ready(ctx)
+            # self._visualize(ctx)
             # print(f"deterministic_motion_tracker/twist: {t.val} seconds")
             # print()
 
-    def _lidar(self, obs: lazy[batched[lidar_obs]]) -> None:
-        pass
+    def _lidar(self, obs, time) -> None:
+        ctx = self.dispatcher.process(state.lidar, obs)
+        self._visualize(ctx)
 
 
 def deterministic_motion_tracker(cfg: localization_params) -> LocalizationBase:
     """localization implementation that only uses motion model"""
-    return _deterministic_motion_tracker(cfg)
+    return deterministic_motion_params()(cfg)

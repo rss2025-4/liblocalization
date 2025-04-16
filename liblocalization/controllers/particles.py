@@ -13,7 +13,7 @@ from geometry_msgs.msg import Twist
 from jax import Array, random
 from tf2_ros import TransformStamped
 
-from libracecar.batched import batched
+from libracecar.batched import batched, batched_zip
 from libracecar.jax_utils import dispatch_spec, divide_x_at_zero, jax_jit_dispatcher
 from libracecar.numpyro_utils import (
     batched_vmap_with_rng,
@@ -28,6 +28,7 @@ from libracecar.utils import (
     cast,
     cast_unchecked,
     debug_print,
+    flike,
     fval,
     jit,
     lazy,
@@ -45,9 +46,10 @@ from ..priors import gaussian, particles
 from ..ros import lidar_obs
 from ..sensor import Condition, EmpiricalRayModel, log_likelyhood
 from ..stats import (
+    apply_noise,
     datapoint,
-    default_stats_dir,
     ray_model_from_pkl,
+    stats_base_dir,
     stats_state,
 )
 
@@ -58,13 +60,18 @@ class particles_params:
     n_from_gaus: int = 0
 
     use_motion_model: bool = True
+    # motion_model_noise: float = 0.5
 
     plot_level: int = 0
     plot_points_limit: int = 1000
 
     evidence_factor: float = 1.0
 
-    stats_path: Path = default_stats_dir
+    stats_in_dir: Path | list[Path] = stats_base_dir / "default"
+    stats_out_dir: Path = stats_base_dir / "default"
+
+    def __call__(self, cfg: localization_params) -> LocalizationBase:
+        return _particles_model(cfg, self)
 
 
 class state(eqx.Module):
@@ -78,12 +85,17 @@ class state(eqx.Module):
 
     rng_key: Array = random.PRNGKey(0)
 
+    confidence: flike = 0.0
+
     def get_seed(self):
         new_key, key = random.split(self.rng_key, 2)
         return tree_at_(lambda me: me.rng_key, self, new_key), jnp.array(key)
 
     def get_pose(self):
         return self, self.prior.mean()
+
+    def get_confidence(self):
+        return self, jnp.array(self.confidence)
 
     def get_particles(self):
         ans, _ = self.prior.points.split_tuple()
@@ -117,9 +129,12 @@ class state(eqx.Module):
 
             if self.params.use_motion_model:
                 new_prior = self.prior.map(lambda x: x + motion_model(twist))
-                new_prior = new_prior.map(
-                    lambda x: x + dummy_motion_model(twist.time, self.res, 0.2)
-                )
+                # new_prior = new_prior.map(
+                #     lambda x: x
+                #     + dummy_motion_model(
+                #         twist.time, self.res, self.params.motion_model_noise
+                #     )
+                # )
             else:
                 new_prior = self.prior.map(
                     lambda x: x + dummy_motion_model(twist.time, self.res, 2.0)
@@ -144,17 +159,29 @@ class state(eqx.Module):
         ctx = plot_ctx.create(self.params.plot_points_limit)
         ctx += self.prior.plot(20, plot_style(color=(1.0, 0.0, 0.0)))
 
-        ans1_ = particles.from_logits(
-            self.prior.points.tuple_map(
-                lambda p, w: (
-                    p,
-                    jnp.log(w)
-                    + log_likelyhood(self.sensor_model, self.map, p, obs)
-                    * self.params.evidence_factor,
-                )
-            )
+        def prior_point(p: position, w: fval) -> tuple[tuple[position, fval], fval]:
+            l = log_likelyhood(self.sensor_model, self.map, p, obs)
+            logit = jnp.log(w) + l * self.params.evidence_factor
+            return ((p, logit), l)
+
+        logits, log_likelyhoods = self.prior.points.tuple_map(prior_point).split_tuple()
+
+        ans1_ = particles.from_logits(logits)
+
+        avg_likelyhood = (
+            batched_zip(ans1_.points.split_tuple()[1], log_likelyhoods)
+            .tuple_map(lambda w, l: w * l)
+            .sum()
+            .unwrap()
         )
+        debug_print("avg_likelyhood", avg_likelyhood)
+
+        self = tree_at_(lambda me: me.confidence, self, avg_likelyhood + 100)
+
         ans1 = ans1_.resample(self.params.n_particles - self.params.n_from_gaus)
+        ans1 = particles.from_samples(
+            batched_vmap_with_rng(lambda x: apply_noise(x[0], self.res), ans1.points)
+        )
 
         if self.params.n_from_gaus == 0:
             ans_conc = ans1
@@ -222,6 +249,7 @@ class _particles_model(Controller):
         self.dispatcher = jax_jit_dispatcher(
             dispatch_spec(state.get_pose),
             dispatch_spec(state.get_particles),
+            dispatch_spec(state.get_confidence),
             dispatch_spec(state.set_pose, self._lazy_position_ex()),
             dispatch_spec(
                 state.twist, self._lazy_twist_ex(), self._plot_ground_truth()
@@ -234,7 +262,7 @@ class _particles_model(Controller):
             ),
         )
         self.dispatcher.run_with_setup(
-            self._init_state, ray_model_from_pkl(self.params.stats_path)
+            self._init_state, ray_model_from_pkl(self.params.stats_in_dir)
         )
         # wait for dispatcher to start
         _ = self._get_pose()
@@ -247,7 +275,7 @@ class _particles_model(Controller):
             map=precomp,
             sensor_model=sensor_model,
             stats=stats_state(
-                out_dir=self.params.stats_path,
+                out_dir=self.params.stats_out_dir,
                 map=precomp,
                 data_idx=jnp.array(0),
                 data=batched.create(
@@ -264,6 +292,9 @@ class _particles_model(Controller):
 
     def _get_particles(self) -> batched[position]:
         return self.dispatcher.process(state.get_particles)
+
+    def get_confidence(self):
+        return float(self.dispatcher.process(state.get_confidence))
 
     def _set_pose(self, pose, time) -> None:
         return self.dispatcher.process(state.set_pose, pose)

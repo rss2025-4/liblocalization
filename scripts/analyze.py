@@ -20,20 +20,21 @@ from geometry_msgs.msg import Twist
 from jax import Array, lax, random
 from jax import tree_util as jtu
 from jaxtyping import Array, Float
+from matplotlib.axes import Axes
 from matplotlib.colors import LogNorm
 from mpl_toolkits.mplot3d import Axes3D
 from numpyro.distributions import constraints
 from termcolor import colored
 from tf2_ros import TransformStamped
 
-from liblocalization.controllers.stats import (
+from liblocalization.sensor import EmpiricalRayModel
+from liblocalization.stats import (
     datapoint,
-    default_stats_dir,
     load_from_pkl,
     ray_model_from_pkl,
+    stats_base_dir,
     stats_state,
 )
-from liblocalization.sensor import EmpiricalRayModel
 from libracecar.batched import batched
 from libracecar.jax_utils import dispatch_spec, divide_x_at_zero, jax_jit_dispatcher
 from libracecar.numpyro_utils import (
@@ -68,21 +69,76 @@ from libracecar.utils import (
 )
 from libracecar.vector import unitvec, vec
 
+jax.config.update("jax_platform_name", "cpu")
+
+
+def get_one(dir: Path) -> np.ndarray:
+    model = ray_model_from_pkl(
+        [
+            dir,
+            # stats_base_dir / "rosbag",
+            # stats_base_dir / "sim",
+            #
+        ]
+    )
+    return np.array(model.parts.map(lambda x: x.probs(0.01)).uf).T
+
 
 def plot_counts():
-    model = ray_model_from_pkl(default_stats_dir)
-    model.parts.uf.counts
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-    ax.set_aspect("equal")
-
-    cax = ax.imshow(
-        np.array(model.parts.uf.counts + 1).T,
-        cmap="viridis",
-        origin="lower",
-        norm=LogNorm(),
+    # model = ray_model_from_pkl(stats_base_dir / "sim")
+    model = ray_model_from_pkl(
+        [
+            # stats_base_dir / "rosbag",
+            stats_base_dir / "sim",
+            #
+        ]
     )
-    fig.colorbar(cax, ax=ax)
-    plt.show()
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+
+    norm = LogNorm()
+
+    def do_one(ax: Axes, data: np.ndarray, title: str):
+
+        ax.set_title(title)
+        ax.set_aspect("equal")
+        ax.set_xlabel("f=ray_est(*, *) (pixels)")
+        ax.set_ylabel("lidar observation (O*) (pixels)")
+
+        cax = ax.imshow(
+            data,
+            cmap="viridis",
+            origin="lower",
+            norm=norm,
+        )
+        return cax
+
+    cax = do_one(
+        axes[0][0],
+        data=get_one(stats_base_dir / "sim"),
+        title="likelihood∗ for lidar in sim",
+    )
+    cax = do_one(
+        axes[0][1],
+        data=get_one(stats_base_dir / "sim")[:100, :100],
+        title="likelihood∗ for lidar in sim (zoomed in)",
+    )
+
+    cax = do_one(
+        axes[1][0],
+        data=get_one(stats_base_dir / "rosbag"),
+        title="likelihood∗ for lidar in real",
+    )
+    cax = do_one(
+        axes[1][1],
+        data=get_one(stats_base_dir / "rosbag")[:100, :100],
+        title="likelihood∗ for lidar in real (zoomed in)",
+    )
+
+    fig.tight_layout()
+    fig.colorbar(cax, ax=axes, orientation="vertical")
+
+    fig.savefig("likelihood_sim.png", dpi=300)
+    plt.close(fig)
+
+    # plt.show()

@@ -68,6 +68,14 @@ class EmpiricalRayModel_one(eqx.Module):
 
     counts: Int[Array, "n"]
 
+    def probs(self, add_uniform: flike = 0.0) -> fval:
+        counts = self.counts
+        n = len(counts)
+
+        return (counts / jnp.sum(counts)) * (1 - add_uniform) + (
+            jnp.ones(n) / n
+        ) * add_uniform
+
     def _as_dist(self) -> dist.Distribution:
         counts = self.counts
         n = len(counts)
@@ -161,7 +169,7 @@ def log_likelyhood(
     ans = jax.vmap(handle_batch)(
         observations[: n_traces * part_len].reshape(n_traces, part_len)
     )
-    return jnp.sum(ans)
+    return jnp.mean(ans)
 
     # def sample_one():
     #     idx = random.randint(prng_key_(), (), minval=2, maxval=len(observations) - 2)

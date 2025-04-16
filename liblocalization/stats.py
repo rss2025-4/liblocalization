@@ -58,12 +58,27 @@ from .priors import gaussian, particles
 from .ros import lidar_obs
 from .sensor import Condition, EmpiricalRayModel
 
-default_stats_dir = Path(__file__).parent.parent / "stats"
+stats_base_dir = Path(__file__).parent.parent / "stats"
 
 
 class datapoint(eqx.Module):
     condition: Condition
     observed_pixels: Array
+
+
+def apply_noise(p: position, res: float):
+    ans_tran = vec.create(
+        # 5cm of noise
+        normal_(p.tran.x, 0.05 / res).sample(prng_key_()),
+        normal_(p.tran.y, 0.05 / res).sample(prng_key_()),
+    )
+    ans_rot = p.rot.mul_unit(
+        unitvec.from_angle(
+            # 5 degrees of noise
+            normal_(0.0, 5.0 / 360 * 2 * math.pi).sample(prng_key_()),
+        )
+    )
+    return position(ans_tran, ans_rot)
 
 
 class stats_state(eqx.Module):
@@ -84,6 +99,7 @@ class stats_state(eqx.Module):
 
     @staticmethod
     def _write_data_cb(out_dir: Path, data_idx: ival, data: batched[datapoint]):
+        out_dir.mkdir(exist_ok=True)
         for i in itertools.count():
             file = out_dir / f"data_{i}.pkl"
             if file.exists():
@@ -125,7 +141,7 @@ class stats_state(eqx.Module):
             return datapoint(Condition.from_traced_ray(ans), obs.dist)
 
         new_data = vmap_seperate_seed(
-            lambda: batched_vmap_with_rng(handle_one, lidar), 8
+            lambda: batched_vmap_with_rng(handle_one, lidar), 16
         )().reshape(-1)
 
         def update_one(x: Array, y: Array):
@@ -142,7 +158,6 @@ class stats_state(eqx.Module):
             ),
         )
 
-        debug_print("self.data_idx", self.data_idx)
         self = cond_(
             self.data_idx + len(new_data) > len(self.data),
             true_fun=lambda: self._do_write(),
@@ -158,6 +173,17 @@ def load_from_pkl_one(file: Path) -> batched[datapoint]:
     return obj
 
 
+def _get_files(dir: Path):
+    def gen():
+        for i in itertools.count():
+            file = dir / f"data_{i}.pkl"
+            if not file.exists():
+                return
+            yield file
+
+    return list(gen())
+
+
 def load_from_pkl(dir: Path) -> batched[datapoint]:
     def gen():
         for i in itertools.count():
@@ -171,9 +197,23 @@ def load_from_pkl(dir: Path) -> batched[datapoint]:
     return batched.concat(parts)
 
 
-def ray_model_from_pkl(dir: Path) -> EmpiricalRayModel:
-    data = load_from_pkl(dir)
-    debug_print("ray_model_from_pkl, max c:", jnp.max(data.uf.condition.d_pixels))
-    debug_print("ray_model_from_pkl, max obs:", jnp.max(data.uf.observed_pixels))
-    ans = EmpiricalRayModel.empty(500, 1000)
-    return ans.push_counts(data.map(lambda x: (x.condition, x.observed_pixels)))
+@jit
+def _push(model: EmpiricalRayModel, data: batched[datapoint]):
+    return model.push_counts(data.map(lambda x: (x.condition, x.observed_pixels)))
+
+
+def ray_model_from_pkl(dir: Path | list[Path]) -> EmpiricalRayModel:
+    if isinstance(dir, Path):
+        files = _get_files(dir)
+    else:
+
+        def gen():
+            for x in dir:
+                yield from _get_files(x)
+
+        files = list(gen())
+
+    ans = EmpiricalRayModel.empty(400, 400)
+    for f in files:
+        ans = _push(ans, load_from_pkl_one(f))
+    return ans

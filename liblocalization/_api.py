@@ -72,11 +72,13 @@ class Controller(LocalizationBase):
                 )
             )
             ans = 0.0
-        if ans > 1.0:
+        elif ans > 1.0:
             print(colored(f"warning: ({warn_tag}) {ans:.2f}s with no messages", "red"))
             ans = 1.0
+            self._prev_time = new_time
+        else:
+            self._prev_time = new_time
 
-        self._prev_time = new_time
         return ans
 
     def odom_callback(self, msg: Odometry) -> None:

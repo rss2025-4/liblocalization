@@ -17,6 +17,7 @@ def main():
         deterministic_motion_tracker,
         particles_model,
         particles_params,
+        stats_base_dir,
     )
     from liblocalization.controllers.stats import stats_params
     from libracecar.test_utils import proc_manager
@@ -37,19 +38,20 @@ def main():
         # env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
     )
 
-    # procs.ros_node_thread(
-    #     ExampleSimNode,
-    #     particles_model(
-    #         particles_params(
-    #             plot_level=10,
-    #             n_particles=500,
-    #             use_motion_model=False,
-    #         )
-    #     ),
-    # )
+    procs.ros_node_thread(
+        ExampleSimNode,
+        particles_params(
+            plot_level=10,
+            n_particles=500,
+            # use_motion_model=False,
+            stats_in_dir=stats_base_dir / "sim",
+            # stats_out_dir=stats_base_dir / "sim",
+            evidence_factor=1.0,
+        ),
+    )
 
     # procs.ros_node_thread(ExampleSimNode, deterministic_motion_tracker)
-    procs.ros_node_subproc(ExampleSimNode, stats_params().build)
+    # procs.ros_node_subproc(ExampleSimNode, stats_params())
 
     time.sleep(3.0)
 

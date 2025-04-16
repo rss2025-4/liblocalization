@@ -54,7 +54,7 @@ def motion_model(twist: twist_t) -> position:
     with numpyro.handlers.scope(prefix="motion"):
 
         linear = twist.linear * numpyro.sample(
-            "linear_noise", trunc_normal_(1.0, 0.1, 0.7, 1.3)
+            "linear_noise", trunc_normal_(1.2, 0.5, 0.1, 5.0)
         )
 
         angle_stdev = 10.0 / 360 * 2 * math.pi

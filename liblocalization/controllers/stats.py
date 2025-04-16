@@ -56,14 +56,14 @@ from ..motion import dummy_motion_model, motion_model, twist_t
 from ..priors import gaussian, particles
 from ..ros import lidar_obs
 from ..sensor import Condition, EmpiricalRayModel
-from ..stats import datapoint, default_stats_dir, stats_state
+from ..stats import datapoint, stats_base_dir, stats_state
 
 
 @dataclass
 class stats_params:
-    out_dir: Path = default_stats_dir
+    out_dir: Path = stats_base_dir / "default"
 
-    def build(self, cfg: localization_params) -> LocalizationBase:
+    def __call__(self, cfg: localization_params) -> LocalizationBase:
         return _stats(cfg, self)
 
 

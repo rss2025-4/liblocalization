@@ -52,7 +52,10 @@ class LocalizationBase(abc.ABC):
 
         must have a correct timestamp.
         """
-        assert msg.header.frame_id == self.cfg.map_frame
+
+        # not needed: we are only using twist which is in "child_frame_id"
+        # assert msg.header.frame_id == self.cfg.map_frame
+
         assert msg.child_frame_id == self.cfg.laser_frame
 
     @abstractmethod
@@ -92,3 +95,6 @@ class LocalizationBase(abc.ABC):
         get the particles as a (n, 3) array with (x, y, theta)
         """
         ...
+
+    def get_confidence(self) -> float:
+        return 0.0
