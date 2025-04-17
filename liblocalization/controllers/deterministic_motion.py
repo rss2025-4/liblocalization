@@ -10,7 +10,13 @@ from geometry_msgs.msg import Twist
 from jax import Array, random
 
 from libracecar.batched import batched
-from libracecar.jax_utils import dispatch_spec, divide_x_at_zero, jax_jit_dispatcher
+from libracecar.jax_utils import (
+    dispatch,
+    dispatch_spec,
+    divide_x_at_zero,
+    io_callback_,
+    jax_jit_dispatcher,
+)
 from libracecar.numpyro_utils import (
     prng_key_,
     trunc_normal_,
@@ -56,11 +62,6 @@ class state(eqx.Module):
 
     pos: position
     noisy_pos: gaussian
-    rng_key: Array = random.PRNGKey(0)
-
-    def get_seed(self):
-        new_key, key = random.split(self.rng_key, 2)
-        return tree_at_(lambda me: me.rng_key, self, new_key), jnp.array(key)
 
     def get_pose(self):
         return self, self.pos
@@ -71,36 +72,29 @@ class state(eqx.Module):
         self = tree_at_(lambda me: me.noisy_pos.mean, self, p.as_arr())
         return self, None
 
-    def twist(self, twist_: lazy[twist_t], gt_: lazy[plotable]):
-        self, key = self.get_seed()
-        with numpyro.handlers.seed(rng_seed=key):
-            twist = twist_()
-            gt = gt_()
+    def twist(self, twist_: lazy[twist_t]):
+        twist = twist_()
+        # gt = gt_()
 
-            ctx = plot_ctx.create(1000)
-            # ctx += gt
+        ctx = plot_ctx.create(1000)
+        # ctx += gt
 
-            ctx += position.zero().plot_as_seg(plot_style(color=(0.0, 1.0, 0.0)))
+        ctx += position.zero().plot_as_seg(plot_style(color=(0.0, 1.0, 0.0)))
 
-            # ctx += self.grid.plot()
+        # ctx += self.grid.plot()
 
-            twist_p = deterministic_position(twist)
-            self = tree_at_(lambda s: s.pos, self, self.pos + twist_p)
-            self = tree_at_(
-                lambda s: s.noisy_pos, self, self.noisy_pos.apply_twist(twist_p)
-            )
+        twist_p = deterministic_position(twist)
+        self = tree_at_(lambda s: s.pos, self, self.pos + twist_p)
+        self = tree_at_(
+            lambda s: s.noisy_pos, self, self.noisy_pos.apply_twist(twist_p)
+        )
 
-            ctx += self.pos.plot_as_seg()
-            # ctx += self.noisy_pos.plot(20)
-            # ctx += position.from_arr(self.noisy_pos.mean).plot_as_seg(
-            #     plot_style(color=(1.0, 0.0, 0.0))
-            # )
-            return self, ctx
-
-    def lidar(self, msg: lazy[batched[lidar_obs]]):
-        self, key = self.get_seed()
-        with numpyro.handlers.seed(rng_seed=key):
-            return self._lidar(msg())
+        ctx += self.pos.plot_as_seg()
+        # ctx += self.noisy_pos.plot(20)
+        # ctx += position.from_arr(self.noisy_pos.mean).plot_as_seg(
+        #     plot_style(color=(1.0, 0.0, 0.0))
+        # )
+        return self, ctx
 
     def plot_computed_rays(self, obs: batched[lidar_obs]) -> plotable:
         pos = self.get_pose()[1]
@@ -111,10 +105,10 @@ class state(eqx.Module):
 
         return vmap_seperate_seed(plot_one, axis_size=50)()
 
-    def _lidar(self, obs: batched[lidar_obs]):
+    def lidar(self, obs: lazy[batched[lidar_obs]]):
         ctx = plot_ctx.create(self.params.plot_points_limit)
         ctx += self.pos.plot_as_seg()
-        ctx += self.plot_computed_rays(obs)
+        ctx += self.plot_computed_rays(obs())
         return self, ctx
 
 
@@ -132,12 +126,10 @@ class _deterministic_motion_tracker(Controller):
             ),
         )
         self.dispatcher = jax_jit_dispatcher(
-            dispatch_spec(state.get_pose),
-            dispatch_spec(state.set_pose, self._lazy_position_ex()),
-            dispatch_spec(state.lidar, self._lazy_lidar_ex()),
-            dispatch_spec(
-                state.twist, self._lazy_twist_ex(), self._plot_ground_truth()
-            ),
+            dispatch(state.get_pose)(),
+            dispatch(state.set_pose)(self._lazy_position_ex()),
+            dispatch(state.lidar)(self._lazy_lidar_ex()),
+            dispatch(state.twist)(self._lazy_twist_ex()),
         )
         self.dispatcher.run(init_state)
 
@@ -149,8 +141,8 @@ class _deterministic_motion_tracker(Controller):
 
     def _twist(self, twist, time):
         with timer.create() as t:
-            gt = self._plot_ground_truth()
-            ctx = self.dispatcher.process(state.twist, twist, gt)
+            # gt = self._plot_ground_truth()
+            ctx = self.dispatcher.process(state.twist, twist)
             # jax.block_until_ready(ctx)
             # self._visualize(ctx)
             # print(f"deterministic_motion_tracker/twist: {t.val} seconds")

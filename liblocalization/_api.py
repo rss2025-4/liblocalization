@@ -17,7 +17,8 @@ from libracecar.batched import batched, blike
 from libracecar.plot import plot_ctx, plot_style, plotable, plotfn
 from libracecar.ros_utils import float_to_time_msg, time_msg_to_float
 from libracecar.specs import position
-from libracecar.utils import jit, lazy, tree_select
+from libracecar.transforms import pose_to_transform
+from libracecar.utils import check_eq, jit, lazy, tree_select
 
 from .api import LocalizationBase, localization_params
 from .map import Grid, GridMeta
@@ -29,12 +30,20 @@ class Controller(LocalizationBase):
     def __init__(self, cfg: localization_params):
         self.cfg = cfg
 
+        check_eq(cfg.map.header.frame_id, cfg.map_frame)
+        check_eq(cfg.tf_odom_laser.header.frame_id, cfg.odom_frame)
+        check_eq(cfg.tf_odom_laser.child_frame_id, cfg.laser_frame)
+
         self.grid = Grid.create(cfg.map)
+        self._res = self.grid.meta.res
+
+        tf_odom_laser = position.from_ros(cfg.tf_odom_laser)()
+        self.tf_odom_laser_pixels = position(
+            tf_odom_laser.tran / self._res, tf_odom_laser.rot
+        )
 
         self._prev_time: float = -1.0
         self.last_twist: Twist | None = None
-
-        self._res = self.grid.meta.res
 
     @abstractmethod
     def _get_pose(self) -> position: ...
@@ -55,7 +64,7 @@ class Controller(LocalizationBase):
         return self._pose_from_ros(TransformStamped())
 
     def _lazy_twist_ex(self) -> lazy[twist_t]:
-        return twist_t.from_ros(Twist(), 0.0, 1.0)
+        return self._make_twist(Twist(), 0.0)
 
     def _lazy_lidar_ex(self) -> lazy[batched[lidar_obs]]:
         msg = LaserScan()
@@ -81,22 +90,33 @@ class Controller(LocalizationBase):
 
         return ans
 
+    @staticmethod
+    def _transform_twist_cb(twist_odom: lazy[twist_t], tf_odom_laser_pixels: position):
+        return twist_odom().transform(tf_odom_laser_pixels)
+
+    def _make_twist(self, twist_odom: Twist, duration: float):
+        return lazy(
+            Controller._transform_twist_cb,
+            twist_t.from_ros(twist_odom, duration, self._res),
+            self.tf_odom_laser_pixels,
+        )
+
     def odom_callback(self, msg: Odometry) -> None:
         super().odom_callback(msg)
         duration = self._update_time(msg.header.stamp, self.odom_callback)
         self.last_twist = msg.twist.twist
         return self._twist(
-            twist_t.from_ros(msg.twist.twist, duration, self._res),
+            self._make_twist(msg.twist.twist, duration),
             time_msg_to_float(msg.header.stamp),
         )
 
     def lidar_callback(self, msg: LaserScan) -> None:
         super().lidar_callback(msg)
-        assert msg.header.frame_id == self.cfg.laser_frame
+        check_eq(msg.header.frame_id, self.cfg.laser_frame)
         duration = self._update_time(msg.header.stamp, self.lidar_callback)
         if self.last_twist is not None:
             self._twist(
-                twist_t.from_ros(self.last_twist, duration, self._res),
+                self._make_twist(self.last_twist, duration),
                 time_msg_to_float(msg.header.stamp),
             )
 
@@ -104,26 +124,29 @@ class Controller(LocalizationBase):
             lidar_obs.from_ros(msg, self._res), time_msg_to_float(msg.header.stamp)
         )
 
-    def get_pose(self) -> TransformStamped:
+    def get_pose_laser(self) -> TransformStamped:
         ans = self._get_pose()
         ans = self.grid.meta.from_pixels(ans)
-
-        x, y, z, w = tf_transformations.quaternion_from_euler(
-            0.0, 0.0, float(ans.rot.to_angle())
-        )
 
         msg = TransformStamped()
         msg.header.frame_id = self.cfg.map_frame
         msg.header.stamp = float_to_time_msg(self._prev_time)
         msg.child_frame_id = self.cfg.laser_frame
 
-        msg.transform.translation.x = float(ans.tran.x)
-        msg.transform.translation.y = float(ans.tran.y)
+        msg.transform = pose_to_transform(ans.to_ros())
 
-        msg.transform.rotation.x = float(x)
-        msg.transform.rotation.y = float(y)
-        msg.transform.rotation.z = float(z)
-        msg.transform.rotation.w = float(w)
+        return msg
+
+    def get_pose_odom(self) -> TransformStamped:
+        ans = self._get_pose()
+        ans = self.grid.meta.from_pixels(ans + self.tf_odom_laser_pixels.invert_pose())
+
+        msg = TransformStamped()
+        msg.header.frame_id = self.cfg.map_frame
+        msg.header.stamp = float_to_time_msg(self._prev_time)
+        msg.child_frame_id = self.cfg.odom_frame
+
+        msg.transform = pose_to_transform(ans.to_ros())
 
         return msg
 
@@ -140,17 +163,27 @@ class Controller(LocalizationBase):
         return np.array(ans)
 
     @staticmethod
-    def _pose_from_ros_cb(pose: lazy[position], map: GridMeta):
-        return map.to_pixels(pose())
+    def _pose_from_ros_cb(
+        pose: lazy[position], map: GridMeta, tf_odom_laser_pixels: position
+    ):
+        return map.to_pixels(pose()) + tf_odom_laser_pixels
 
     def _pose_from_ros(self, pose: TransformStamped) -> lazy[position]:
         return lazy(
-            Controller._pose_from_ros_cb, position.from_ros(pose), self.grid.meta
+            Controller._pose_from_ros_cb,
+            position.from_ros(pose),
+            self.grid.meta,
+            self.tf_odom_laser_pixels,
         )
 
     def set_pose(self, pose: TransformStamped) -> None:
         super().set_pose(pose)
         _ = self._update_time(pose.header.stamp, self.set_pose)
+
+        check_eq(pose.child_frame_id, self.cfg.odom_frame)
+
+        position.from_ros(pose)()
+
         self._set_pose(self._pose_from_ros(pose), time_msg_to_float(pose.header.stamp))
 
     def _visualize(self, ctx: plot_ctx):
@@ -171,8 +204,8 @@ class Controller(LocalizationBase):
         t = self.cfg.ground_truth_callback()
         if t is None:
             return
-        assert t.child_frame_id == self.cfg.laser_frame
-        assert t.header.frame_id == self.cfg.map_frame
+        check_eq(t.child_frame_id, self.cfg.laser_frame)
+        check_eq(t.header.frame_id, self.cfg.map_frame)
         if reference_time is not None:
             time_diff = reference_time - time_msg_to_float(t.header.stamp)
             if abs(time_diff) > allowed_offset:

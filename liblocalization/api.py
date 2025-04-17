@@ -12,18 +12,22 @@ from tf2_ros import (
 )
 from visualization_msgs.msg import Marker
 
+from libracecar.utils import check_eq
+
 
 @dataclass(frozen=True)
 class localization_params:
+    map_frame: str
+    odom_frame: str
+    laser_frame: str
+
+    tf_odom_laser: TransformStamped
 
     #: the map image and origin
     map: OccupancyGrid
 
     #: length of "ranges" in LaserScan; needed for jax to compile computation in advance.
     n_laser_points: int = 100
-
-    map_frame: str = "map"
-    laser_frame: str = "laser"
 
     #: callback that can be called from the controller to accept a Marker.
     #:
@@ -57,7 +61,7 @@ class LocalizationBase(abc.ABC):
         # not needed: we are only using twist which is in "child_frame_id"
         # assert msg.header.frame_id == self.cfg.map_frame
 
-        assert msg.child_frame_id == self.cfg.laser_frame
+        check_eq(msg.child_frame_id, self.cfg.odom_frame)
 
     @abstractmethod
     def lidar_callback(self, msg: LaserScan) -> None:
@@ -66,10 +70,7 @@ class LocalizationBase(abc.ABC):
 
         must have a correct timestamp.
         """
-        assert msg.header.frame_id == self.cfg.laser_frame, (
-            msg.header.frame_id,
-            self.cfg.laser_frame,
-        )
+        check_eq(msg.header.frame_id, self.cfg.laser_frame)
         assert (
             len(msg.ranges) == self.cfg.n_laser_points
         ), f"expected {self.cfg.n_laser_points} laser points, got {len(msg.ranges)}"
@@ -79,17 +80,22 @@ class LocalizationBase(abc.ABC):
         """
         set the initial pose.
 
-        pose is given as a transform of self.cfg.map_frame -> self.cfg.laser_frame
+        pose is given as a transform of self.cfg.map_frame -> self.cfg.odom_frame
         """
-        assert (
-            pose.header.frame_id == self.cfg.map_frame
-        ), f"expected {self.cfg.map_frame}, got {pose.header.frame_id}"
-        assert pose.child_frame_id == self.cfg.laser_frame
+        check_eq(pose.header.frame_id, self.cfg.map_frame)
+        check_eq(pose.child_frame_id, self.cfg.odom_frame)
 
     @abstractmethod
-    def get_pose(self) -> TransformStamped:
+    def get_pose_laser(self) -> TransformStamped:
         """
-        get the current best pose estimate.
+        get the current best pose estimate, in self.cfg.laser_frame
+        """
+        ...
+
+    @abstractmethod
+    def get_pose_odom(self) -> TransformStamped:
+        """
+        get the current best pose estimate, in self.cfg.odom_frame
         """
         ...
 
@@ -97,8 +103,9 @@ class LocalizationBase(abc.ABC):
     def get_particles(self) -> np.ndarray:
         """
         get the particles as a (n, 3) array with (x, y, theta)
+        in self.cfg.laser_frame
         """
         ...
 
     def get_confidence(self) -> float:
-        return 0.0
+        return -100000.0

@@ -73,40 +73,38 @@ from libracecar.vector import unitvec, vec
 jax.config.update("jax_platform_name", "cpu")
 
 
-def get_one(dir: Path) -> np.ndarray:
-    model = ray_model_from_pkl(
-        [
-            dir,
-            # stats_base_dir / "rosbag",
-            # stats_base_dir / "sim",
-            #
-        ]
-    )
-    return np.array(model.parts.map(lambda x: x.probs(0.01)).uf).T
+# def get_one(dir: Path) -> np.ndarray:
+#     model = ray_model_from_pkl(
+#         [
+#             dir,
+#             # stats_base_dir / "rosbag",
+#             # stats_base_dir / "sim",
+#             #
+#         ]
+#     )
+#     return np.array(model.parts.map(lambda x: x.probs(0.01)).uf).T
+
+
+def parts():
+    return [
+        #
+        # stats_base_dir / "rosbags_lidar_fixed2",
+        stats_base_dir / "sim",
+        stats_base_dir / "rosbags_4_16_v2",
+        #
+    ]
 
 
 def dump_model():
-    out_path = models_base_dir / "model3.pkl"
+    out_path = models_base_dir / "model5.pkl"
 
-    model = ray_model_from_pkl(
-        [
-            #
-            stats_base_dir / "sim",
-            stats_base_dir / "rosbags_lidar_fixed2",
-        ]
-    )
+    model = ray_model_from_pkl(parts())
     out_path.write_bytes(pickle.dumps(model))
 
 
 def plot_counts():
     # model = ray_model_from_pkl(stats_base_dir / "sim")
-    model = ray_model_from_pkl(
-        [
-            #
-            stats_base_dir / "sim",
-            stats_base_dir / "rosbags_lidar_fixed2",
-        ]
-    )
+    model = ray_model_from_pkl(parts())
 
     fig = plt.figure()
     ax = fig.add_subplot(111)

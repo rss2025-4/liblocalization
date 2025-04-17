@@ -33,7 +33,7 @@ def main():
             model_path=models_base_dir / "model2.pkl",
         ),
         cfg=RealNodeConfig(
-            laser_frame="laser_model",
+            time_overwrite=True,
         ),
     )
     rclpy.spin(node)

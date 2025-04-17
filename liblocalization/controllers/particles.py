@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import pickle
 import time
@@ -42,7 +44,7 @@ from libracecar.vector import unitvec, vec
 from .._api import Controller
 from ..api import LocalizationBase, localization_params
 from ..map import precompute, precomputed_map, trace_ray
-from ..motion import dummy_motion_model, motion_model, twist_t
+from ..motion import deterministic_position, dummy_motion_model, motion_model, twist_t
 from ..priors import gaussian, particles
 from ..ros import lidar_obs
 from ..sensor import Condition, EmpiricalRayModel, log_likelyhood
@@ -73,6 +75,8 @@ class particles_params:
 
     model_path: Path | None = None
 
+    collect_stats: bool = False
+
     def __call__(self, cfg: localization_params) -> LocalizationBase:
         return _particles_model(cfg, self)
 
@@ -82,7 +86,10 @@ class state(eqx.Module):
     params: particles_params = eqx.field(static=True)
 
     prior: particles
+    cur_est: position
+
     map: precomputed_map
+
     sensor_model: EmpiricalRayModel
     stats: stats_state
 
@@ -94,8 +101,9 @@ class state(eqx.Module):
         new_key, key = random.split(self.rng_key, 2)
         return tree_at_(lambda me: me.rng_key, self, new_key), jnp.array(key)
 
-    def get_pose(self):
-        return self, self.prior.mean()
+    def get_pose(self) -> tuple[state, position]:
+        # return self, self.prior.mean()
+        return self, self.cur_est
 
     def get_confidence(self):
         return self, jnp.array(self.confidence)
@@ -129,6 +137,12 @@ class state(eqx.Module):
 
             ctx = plot_ctx.create(self.params.plot_points_limit)
             # ctx += gt
+
+            self = tree_at_(
+                lambda me: me.cur_est,
+                self,
+                replace_fn=lambda x: x + deterministic_position(twist),
+            )
 
             if self.params.use_motion_model:
                 new_prior = self.prior.map(lambda x: x + motion_model(twist))
@@ -169,6 +183,12 @@ class state(eqx.Module):
 
         logits, log_likelyhoods = self.prior.points.tuple_map(prior_point).split_tuple()
 
+        self = tree_at_(
+            lambda me: me.cur_est,
+            self,
+            particles.from_logits(logits.tuple_map(lambda p, l: (p, l * 10))).mean(),
+        )
+
         ans1_ = particles.from_logits(logits)
 
         avg_likelyhood = (
@@ -179,7 +199,7 @@ class state(eqx.Module):
         )
         debug_print("avg_likelyhood", avg_likelyhood)
 
-        self = tree_at_(lambda me: me.confidence, self, avg_likelyhood + 100)
+        self = tree_at_(lambda me: me.confidence, self, avg_likelyhood)
 
         ans1 = ans1_.resample(self.params.n_particles - self.params.n_from_gaus)
         ans1 = particles.from_samples(
@@ -293,6 +313,7 @@ class _particles_model(Controller):
             prior=particles.from_samples(
                 batched.create(position.zero()).repeat(self.params.n_particles)
             ),
+            cur_est=position.zero(),
         )
 
     def _get_pose(self):
@@ -305,6 +326,7 @@ class _particles_model(Controller):
         return float(self.dispatcher.process(state.get_confidence))
 
     def _set_pose(self, pose, time) -> None:
+        print("set_pose!!!")
         return self.dispatcher.process(state.set_pose, pose)
 
     def _twist(self, twist, time):
@@ -318,12 +340,13 @@ class _particles_model(Controller):
         with timer.create() as t:
             ctx = self.dispatcher.process(state.lidar, obs)
 
-            # gt = self._ground_truth(time)
-            # if gt is not None:
-            #     self.dispatcher.process(state.update_stats, gt, obs)
+            if self.params.collect_stats:
+                gt = self._ground_truth(time)
+                if gt is not None:
+                    self.dispatcher.process(state.update_stats, gt, obs)
 
             jax.block_until_ready(ctx)
-            # print(f"lidar: {t.val} seconds")
+            print(f"lidar: {t.val} seconds")
             self._visualize(ctx)
 
 

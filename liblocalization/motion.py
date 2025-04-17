@@ -19,8 +19,6 @@ from .ros import twist_t
 
 
 def deterministic_position(twist: twist_t) -> position:
-    assert isinstance(twist.linear, vec)
-
     # ang = exp( (angular * t) * i) * linear
     # ang_integal = exp( (angular * t) * i) / (angular * i) * linear
     # ang_integal(0) = 1 / (angular * i) * linear

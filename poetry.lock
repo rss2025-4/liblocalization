@@ -1148,7 +1148,7 @@ jax = ["equinox", "jax", "jaxtyping", "numpyro", "optax"]
 type = "git"
 url = "https://github.com/rss2025-4/libracecar.git"
 reference = "HEAD"
-resolved_reference = "0d71d85de459def0af5b549470803412ba8fb79f"
+resolved_reference = "32a2b1242f9d622f091b0da74058e789a070fb65"
 
 [[package]]
 name = "lz4"

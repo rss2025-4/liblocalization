@@ -14,6 +14,7 @@ from _liblocalization_cpp import distance_2d as _distance_2d
 from libracecar.batched import batched, batched_zip
 from libracecar.plot import plot_ctx, plot_point, plot_style, plotable, plotmethod
 from libracecar.specs import position
+from libracecar.transforms import pose_to_transform
 from libracecar.utils import (
     bval,
     ensure_not_weak_typed,
@@ -103,19 +104,11 @@ class Grid(eqx.Module):
         data = np.array(msg.data)
         assert data.shape == (h * w,)
 
-        # from TAs
-        origin_p = msg.info.origin.position
-        origin_o = msg.info.origin.orientation
-        origin_o = euler_from_quaternion(
-            (origin_o.x, origin_o.y, origin_o.z, origin_o.w)
-        )
-        origin = (origin_p.x, origin_p.y, origin_o[2])
-
         meta = GridMeta(
             h=h,
             w=w,
             res=res,
-            origin_to_pixel_zero_meters=position.create(origin[:2], origin[2]),
+            origin_to_pixel_zero_meters=position.from_ros_pose(msg.info.origin)(),
         )
         return Grid(
             meta=meta,

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import subprocess
 
 from libracecar.sandbox import isolate
 
@@ -15,7 +16,6 @@ def main():
     import numpy as np
 
     from liblocalization import (
-        ExampleSimNode,
         RealNode,
         deterministic_motion_tracker,
         models_base_dir,
@@ -23,11 +23,15 @@ def main():
         particles_params,
         stats_base_dir,
     )
+    from liblocalization.controllers.deterministic_motion import (
+        deterministic_motion_params,
+    )
     from liblocalization.controllers.stats import stats_params
     from liblocalization.real_node import RealNodeConfig
     from libracecar.test_utils import proc_manager
 
     jax.config.update("jax_platform_name", "cpu")
+
     np.set_printoptions(precision=5, suppress=True)
     # jax.config.update("jax_enable_x64", True)
 
@@ -36,9 +40,9 @@ def main():
     # map = mapdir / "test_map.yaml"
     map = mapdir / "stata_basement.yaml"
 
-    bag_dir = Path("/home/alan/6.4200/lab 6 rosbags/")
+    bag_dir = Path("/home/dockeruser/repos/rosbags_4_16/")
     # bag = "rrt_angle_longer"
-    bag = "rrt_angle"
+    bag = "bag_out2"
 
     # for bag in [
     #     "astar_angle_2",
@@ -61,6 +65,8 @@ def main():
     procs.popen(
         ["rviz2"],
         env=os.environ | {"LIBGL_ALWAYS_SOFTWARE": "1"},
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
     # procs.popen(
@@ -70,18 +76,23 @@ def main():
 
     procs.ros_node_thread(
         lambda context: RealNode(
+            # deterministic_motion_params(),
             particles_params(
                 plot_level=10,
                 n_particles=500,
                 # use_motion_model=False,
-                # stats_in_dir=stats_base_dir / "sim",
-                stats_in_dir=None,
-                stats_out_dir=stats_base_dir / "rosbags_lidar_fixed2",
+                stats_in_dir=stats_base_dir / "sim",
+                # stats_out_dir=stats_base_dir / "rosbags_4_16_v2",
                 # evidence_factor=1.0,
-                model_path=models_base_dir / "model2.pkl",
+                # model_path=models_base_dir / "model4.pkl",
+                collect_stats=True,
             ),
             cfg=RealNodeConfig(
                 laser_frame="laser_model",
+                visualization_topic="/visualization_sim",
+                ground_truth_confidence_threshold=-3.0,
+                time_overwrite=True,
+                invert_odom=True,
             ),
             context=context,
         ),
@@ -120,6 +131,8 @@ def main():
     bag_p = procs.popen(
         ["ros2", "bag", "play", bag],
         cwd=str(bag_dir),
+        # stdout=subprocess.DEVNULL,
+        # stderr=subprocess.DEVNULL,
     )
 
     time.sleep(10000)

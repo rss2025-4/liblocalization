@@ -53,10 +53,14 @@ class ExampleSimNode(Node):
         self.odom_transformer = None
 
     def map_callback(self, map_msg: OccupancyGrid):
+        assert False
         self.controller = self.controller_init(
             localization_params(
                 n_laser_points=100,
                 map=map_msg,
+                map_frame="map",
+                laser_frame="laser",
+                odom_frame="base_link",
                 marker_callback=self.marker_callback,
                 ground_truth_callback=self.ground_truth_callback,
             )
@@ -67,6 +71,7 @@ class ExampleSimNode(Node):
         if self.controller is None:
             return None
 
+        assert False
         if not self.finished_init:
             try:
                 self.odom_transformer = Transformer(

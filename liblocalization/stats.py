@@ -100,7 +100,7 @@ class stats_state(eqx.Module):
 
     @staticmethod
     def _write_data_cb(out_dir: Path, data_idx: ival, data: batched[datapoint]):
-        out_dir.mkdir(exist_ok=True, parents = True)
+        out_dir.mkdir(exist_ok=True, parents=True)
         for i in itertools.count():
             file = out_dir / f"data_{i}.pkl"
             if file.exists():
