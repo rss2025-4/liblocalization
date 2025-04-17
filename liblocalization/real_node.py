@@ -64,8 +64,26 @@ class RealNode(Node):
 
         self.visualization_pub = self.create_publisher(Marker, "/visualization", 10)
 
+        self.odom_pub = self.create_publisher(Odometry, "/pf/pose/odom", 1)
+
         self.finished_init = False
         self.odom_transformer = None
+
+    def do_publish(self):
+        if controller := self.get_controller():
+            est = controller.get_pose()
+
+            odom_msg = Odometry()
+            odom_msg.header = est.header
+            odom_msg.child_frame_id = est.child_frame_id
+
+            odom_msg.pose.pose.position.x = est.transform.translation.x
+            odom_msg.pose.pose.position.y = est.transform.translation.y
+            odom_msg.pose.pose.position.z = est.transform.translation.z
+
+            odom_msg.pose.pose.orientation = est.transform.rotation
+
+            self.odom_pub.publish(odom_msg)
 
     def map_callback(self, map_msg: OccupancyGrid):
         if self.controller is None:
@@ -141,6 +159,8 @@ class RealNode(Node):
             # print("pose:", controller.get_pose())
             # print("particles:", controller.get_particles())
 
+            self.do_publish()
+
     def lidar_callback(self, msg: LaserScan):
 
         print("lidar_callback", msg.header.frame_id)
@@ -154,6 +174,8 @@ class RealNode(Node):
             msg.header.stamp = self.get_clock().now().to_msg()
 
             controller.lidar_callback(msg)
+
+            self.do_publish()
 
     def marker_callback(self, marker: Marker):
         self.visualization_pub.publish(marker)
