@@ -43,10 +43,61 @@
               <!-- Local TOC -->
               <div class="local-toc"><ul>
 <li><a class="reference internal" href="#">install or upate</a></li>
-<li><a class="reference internal" href="#interface">interface</a></li>
-<li><a class="reference internal" href="#controllers">controllers</a></li>
-<li><a class="reference internal" href="#example">example</a></li>
-<li><a class="reference internal" href="#parameters">parameters</a></li>
+<li><a class="reference internal" href="#interface">interface</a><ul>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase"><code class="docutils literal notranslate"><span class="pre">LocalizationBase</span></code></a><ul>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.cfg"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.cfg</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.odom_callback"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.odom_callback()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.lidar_callback"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.lidar_callback()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.set_pose"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.set_pose()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.get_pose"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.get_pose()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.get_particles"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.get_particles()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.LocalizationBase.get_confidence"><code class="docutils literal notranslate"><span class="pre">LocalizationBase.get_confidence()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#liblocalization.localization_params"><code class="docutils literal notranslate"><span class="pre">localization_params</span></code></a><ul>
+<li><a class="reference internal" href="#liblocalization.localization_params.map"><code class="docutils literal notranslate"><span class="pre">localization_params.map</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.n_laser_points"><code class="docutils literal notranslate"><span class="pre">localization_params.n_laser_points</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.map_frame"><code class="docutils literal notranslate"><span class="pre">localization_params.map_frame</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.laser_frame"><code class="docutils literal notranslate"><span class="pre">localization_params.laser_frame</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.marker_callback"><code class="docutils literal notranslate"><span class="pre">localization_params.marker_callback()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.ground_truth_callback"><code class="docutils literal notranslate"><span class="pre">localization_params.ground_truth_callback()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.localization_params.__init__"><code class="docutils literal notranslate"><span class="pre">localization_params.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#controllers">controllers</a><ul>
+<li><a class="reference internal" href="#liblocalization.deterministic_motion_tracker"><code class="docutils literal notranslate"><span class="pre">deterministic_motion_tracker()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_model"><code class="docutils literal notranslate"><span class="pre">particles_model()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params"><code class="docutils literal notranslate"><span class="pre">particles_params</span></code></a><ul>
+<li><a class="reference internal" href="#liblocalization.particles_params.n_particles"><code class="docutils literal notranslate"><span class="pre">particles_params.n_particles</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.n_from_gaus"><code class="docutils literal notranslate"><span class="pre">particles_params.n_from_gaus</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.use_motion_model"><code class="docutils literal notranslate"><span class="pre">particles_params.use_motion_model</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.plot_level"><code class="docutils literal notranslate"><span class="pre">particles_params.plot_level</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.plot_points_limit"><code class="docutils literal notranslate"><span class="pre">particles_params.plot_points_limit</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.evidence_factor"><code class="docutils literal notranslate"><span class="pre">particles_params.evidence_factor</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.stats_in_dir"><code class="docutils literal notranslate"><span class="pre">particles_params.stats_in_dir</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.stats_out_dir"><code class="docutils literal notranslate"><span class="pre">particles_params.stats_out_dir</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.model_path"><code class="docutils literal notranslate"><span class="pre">particles_params.model_path</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.particles_params.__init__"><code class="docutils literal notranslate"><span class="pre">particles_params.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example">example</a><ul>
+<li><a class="reference internal" href="#liblocalization.ExampleSimNode"><code class="docutils literal notranslate"><span class="pre">ExampleSimNode</span></code></a><ul>
+<li><a class="reference internal" href="#liblocalization.ExampleSimNode.__init__"><code class="docutils literal notranslate"><span class="pre">ExampleSimNode.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.ExampleSimNode.__new__"><code class="docutils literal notranslate"><span class="pre">ExampleSimNode.__new__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#liblocalization.examplemain"><code class="docutils literal notranslate"><span class="pre">examplemain()</span></code></a></li>
+<li><a class="reference internal" href="#liblocalization.examplemain2"><code class="docutils literal notranslate"><span class="pre">examplemain2()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#parameters">parameters</a><ul>
+<li><a class="reference internal" href="#liblocalization.motion.motion_model"><code class="docutils literal notranslate"><span class="pre">motion_model()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </div>
         </div>
@@ -89,15 +140,240 @@ git+https://github.com/rss2025-4/liblocalization.git@xxxxxxxxxxxxxxxxxxxxxxxxxxx
 </section>
 <section id="interface">
 <h1>interface<a class="headerlink" href="#interface" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">LocalizationBase</span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase" title="Link to this definition"></a></dt>
+<dd><p>common interface implemented by localization algorithms</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.cfg">
+<span class="sig-name descname"><span class="pre">cfg</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a></em><a class="headerlink" href="#liblocalization.LocalizationBase.cfg" title="Link to this definition"></a></dt>
+<dd><p>shared parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.odom_callback">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">odom_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Odometry</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.odom_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.odom_callback" title="Link to this definition"></a></dt>
+<dd><p>update the algorithm with an odometry on self.cfg.laser_frame.</p>
+<p>only twist will be used.</p>
+<p>must have a correct timestamp.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.lidar_callback">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">lidar_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LaserScan</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.lidar_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.lidar_callback" title="Link to this definition"></a></dt>
+<dd><p>update the algorithm with  a scan on self.cfg.laser_frame.</p>
+<p>must have a correct timestamp.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.set_pose">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_pose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TransformStamped</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.set_pose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.set_pose" title="Link to this definition"></a></dt>
+<dd><p>set the initial pose.</p>
+<p>pose is given as a transform of self.cfg.map_frame -&gt; self.cfg.laser_frame</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.get_pose">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_pose</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TransformStamped</span></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.get_pose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.get_pose" title="Link to this definition"></a></dt>
+<dd><p>get the current best pose estimate.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.get_particles">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_particles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.2)"><span class="pre">ndarray</span></a></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.get_particles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.get_particles" title="Link to this definition"></a></dt>
+<dd><p>get the particles as a (n, 3) array with (x, y, theta)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.LocalizationBase.get_confidence">
+<span class="sig-name descname"><span class="pre">get_confidence</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></span><a class="reference internal" href="_modules/liblocalization/api.html#LocalizationBase.get_confidence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.LocalizationBase.get_confidence" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.localization_params">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">localization_params</span></span><a class="reference internal" href="_modules/liblocalization/api.html#localization_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.localization_params" title="Link to this definition"></a></dt>
+<dd><p>localization_params(map: nav_msgs.msg._occupancy_grid.OccupancyGrid, n_laser_points: int = 100, map_frame: str = ‘map’, laser_frame: str = ‘laser’, marker_callback: Callable[[visualization_msgs.msg._marker.Marker], NoneType] = &lt;function localization_params.&lt;lambda&gt; at 0x7f71a875d480&gt;, ground_truth_callback: Callable[[], geometry_msgs.msg._transform_stamped.TransformStamped | None] = &lt;function localization_params.&lt;lambda&gt; at 0x7f71a875e200&gt;)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.localization_params.map">
+<span class="sig-name descname"><span class="pre">map</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">OccupancyGrid</span></em><a class="headerlink" href="#liblocalization.localization_params.map" title="Link to this definition"></a></dt>
+<dd><p>the map image and origin</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.localization_params.n_laser_points">
+<span class="sig-name descname"><span class="pre">n_laser_points</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></em><a class="headerlink" href="#liblocalization.localization_params.n_laser_points" title="Link to this definition"></a></dt>
+<dd><p>length of “ranges” in LaserScan; needed for jax to compile computation in advance.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.localization_params.map_frame">
+<span class="sig-name descname"><span class="pre">map_frame</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'map'</span></em><a class="headerlink" href="#liblocalization.localization_params.map_frame" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.localization_params.laser_frame">
+<span class="sig-name descname"><span class="pre">laser_frame</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'laser'</span></em><a class="headerlink" href="#liblocalization.localization_params.laser_frame" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.localization_params.marker_callback">
+<span class="sig-name descname"><span class="pre">marker_callback</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#liblocalization.localization_params.marker_callback" title="Link to this definition"></a></dt>
+<dd><p>callback that can be called from the controller to accept a Marker.</p>
+<p>By default, does nothing with the Marker.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.localization_params.ground_truth_callback">
+<span class="sig-name descname"><span class="pre">ground_truth_callback</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#liblocalization.localization_params.ground_truth_callback" title="Link to this definition"></a></dt>
+<dd><p>callback that can be called from the controller to know the sim ground truth.</p>
+<p>for debugging purposes.</p>
+<p>By default, returns None</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.localization_params.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">map:</span> <span class="pre">~nav_msgs.msg._occupancy_grid.OccupancyGrid,</span> <span class="pre">n_laser_points:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100,</span> <span class="pre">map_frame:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'map',</span> <span class="pre">laser_frame:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'laser',</span> <span class="pre">marker_callback:</span> <span class="pre">~typing.Callable[[~visualization_msgs.msg._marker.Marker],</span> <span class="pre">None]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">localization_params.&lt;lambda&gt;&gt;,</span> <span class="pre">ground_truth_callback:</span> <span class="pre">~typing.Callable[[],</span> <span class="pre">~geometry_msgs.msg._transform_stamped.TransformStamped</span> <span class="pre">|</span> <span class="pre">None]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">localization_params.&lt;lambda&gt;&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#liblocalization.localization_params.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="controllers">
 <h1>controllers<a class="headerlink" href="#controllers" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="liblocalization.deterministic_motion_tracker">
+<span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">deterministic_motion_tracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#liblocalization.LocalizationBase" title="liblocalization.api.LocalizationBase"><span class="pre">LocalizationBase</span></a></span></span><a class="reference internal" href="_modules/liblocalization/controllers/deterministic_motion.html#deterministic_motion_tracker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.deterministic_motion_tracker" title="Link to this definition"></a></dt>
+<dd><p>localization implementation that only uses motion model</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="liblocalization.particles_model">
+<span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">particles_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#liblocalization.particles_params" title="liblocalization.controllers.particles.particles_params"><span class="pre">particles_params</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#liblocalization.LocalizationBase" title="liblocalization.api.LocalizationBase"><span class="pre">LocalizationBase</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/liblocalization/controllers/particles.html#particles_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.particles_model" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.particles_params">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">particles_params</span></span><a class="reference internal" href="_modules/liblocalization/controllers/particles.html#particles_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.particles_params" title="Link to this definition"></a></dt>
+<dd><p>particles_params(n_particles: int = 1000, n_from_gaus: int = 0, use_motion_model: bool = True, plot_level: int = 0, plot_points_limit: int = 1000, evidence_factor: float = 1.0, stats_in_dir: pathlib.Path | list[pathlib.Path] | None = None, stats_out_dir: pathlib.Path | None = PosixPath(‘/home/dockeruser/racecar_ws/src/liblocalization/stats/default’), model_path: pathlib.Path | None = None)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.n_particles">
+<span class="sig-name descname"><span class="pre">n_particles</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1000</span></em><a class="headerlink" href="#liblocalization.particles_params.n_particles" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.n_from_gaus">
+<span class="sig-name descname"><span class="pre">n_from_gaus</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#liblocalization.particles_params.n_from_gaus" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.use_motion_model">
+<span class="sig-name descname"><span class="pre">use_motion_model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#liblocalization.particles_params.use_motion_model" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.plot_level">
+<span class="sig-name descname"><span class="pre">plot_level</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#liblocalization.particles_params.plot_level" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.plot_points_limit">
+<span class="sig-name descname"><span class="pre">plot_points_limit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1000</span></em><a class="headerlink" href="#liblocalization.particles_params.plot_points_limit" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.evidence_factor">
+<span class="sig-name descname"><span class="pre">evidence_factor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></em><a class="headerlink" href="#liblocalization.particles_params.evidence_factor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.stats_in_dir">
+<span class="sig-name descname"><span class="pre">stats_in_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#liblocalization.particles_params.stats_in_dir" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.stats_out_dir">
+<span class="sig-name descname"><span class="pre">stats_out_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PosixPath('/home/dockeruser/racecar_ws/src/liblocalization/stats/default')</span></em><a class="headerlink" href="#liblocalization.particles_params.stats_out_dir" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="liblocalization.particles_params.model_path">
+<span class="sig-name descname"><span class="pre">model_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#liblocalization.particles_params.model_path" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.particles_params.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_particles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_from_gaus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_motion_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_points_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stats_in_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stats_out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">PosixPath('/home/dockeruser/racecar_ws/src/liblocalization/stats/default')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#liblocalization.particles_params.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="example">
 <h1>example<a class="headerlink" href="#example" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="liblocalization.ExampleSimNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">ExampleSimNode</span></span><a class="reference internal" href="_modules/liblocalization/api_example.html#ExampleSimNode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.ExampleSimNode" title="Link to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.ExampleSimNode.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">controller_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#liblocalization.localization_params" title="liblocalization.api.localization_params"><span class="pre">localization_params</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#liblocalization.LocalizationBase" title="liblocalization.api.LocalizationBase"><span class="pre">LocalizationBase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Context</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/liblocalization/api_example.html#ExampleSimNode.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.ExampleSimNode.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create a Node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_name</strong> – A name to give to this node. Validated by <code class="xref py py-func docutils literal notranslate"><span class="pre">validate_node_name()</span></code>.</p></li>
+<li><p><strong>context</strong> – The context to be associated with, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for the default global
+context.</p></li>
+<li><p><strong>cli_args</strong> – A list of strings of command line args to be used only by this node.
+These arguments are used to extract remappings used by the node and other ROS specific
+settings, as well as user defined non-ROS arguments.</p></li>
+<li><p><strong>namespace</strong> – The namespace to which relative topic and service names will be prefixed.
+Validated by <code class="xref py py-func docutils literal notranslate"><span class="pre">validate_namespace()</span></code>.</p></li>
+<li><p><strong>use_global_arguments</strong> – <code class="docutils literal notranslate"><span class="pre">False</span></code> if the node should ignore process-wide command line
+args.</p></li>
+<li><p><strong>enable_rosout</strong> – <code class="docutils literal notranslate"><span class="pre">False</span></code> if the node should ignore rosout logging.</p></li>
+<li><p><strong>start_parameter_services</strong> – <code class="docutils literal notranslate"><span class="pre">False</span></code> if the node should not create parameter
+services.</p></li>
+<li><p><strong>parameter_overrides</strong> – A list of overrides for initial values for parameters declared
+on the node.</p></li>
+<li><p><strong>allow_undeclared_parameters</strong> – True if undeclared parameters are allowed.
+This flag affects the behavior of parameter-related operations.</p></li>
+<li><p><strong>automatically_declare_parameters_from_overrides</strong> – If True, the “parameter overrides”
+will be used to implicitly declare parameters on the node during creation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="liblocalization.ExampleSimNode.__new__">
+<span class="sig-name descname"><span class="pre">__new__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#liblocalization.ExampleSimNode.__new__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="liblocalization.examplemain">
+<span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">examplemain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/liblocalization/api_example.html#examplemain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.examplemain" title="Link to this definition"></a></dt>
+<dd><p>examle (deterministic_motion_tracker)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="liblocalization.examplemain2">
+<span class="sig-prename descclassname"><span class="pre">liblocalization.</span></span><span class="sig-name descname"><span class="pre">examplemain2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/liblocalization/api_example.html#examplemain2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.examplemain2" title="Link to this definition"></a></dt>
+<dd><p>examle (particles_model)</p>
+</dd></dl>
+
 </section>
 <section id="parameters">
 <h1>parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="liblocalization.motion.motion_model">
+<span class="sig-prename descclassname"><span class="pre">liblocalization.motion.</span></span><span class="sig-name descname"><span class="pre">motion_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">twist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">twist_t</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">position</span></span></span><a class="reference internal" href="_modules/liblocalization/motion.html#motion_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#liblocalization.motion.motion_model" title="Link to this definition"></a></dt>
+<dd><p>contain motion model parameters (see source)</p>
+</dd></dl>
+
 </section>
 
 

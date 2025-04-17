@@ -1,0 +1,267 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>liblocalization.controllers.deterministic_motion &mdash; liblocalization  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            liblocalization
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">liblocalization</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">liblocalization.controllers.deterministic_motion</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for liblocalization.controllers.deterministic_motion</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">equinox</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">eqx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpyro</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">geometry_msgs.msg</span><span class="w"> </span><span class="kn">import</span> <span class="n">Twist</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">random</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.batched</span><span class="w"> </span><span class="kn">import</span> <span class="n">batched</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.jax_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">dispatch_spec</span><span class="p">,</span> <span class="n">divide_x_at_zero</span><span class="p">,</span> <span class="n">jax_jit_dispatcher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.numpyro_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">prng_key_</span><span class="p">,</span>
+    <span class="n">trunc_normal_</span><span class="p">,</span>
+    <span class="n">vmap_seperate_seed</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.plot</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_ctx</span><span class="p">,</span> <span class="n">plot_style</span><span class="p">,</span> <span class="n">plotable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.specs</span><span class="w"> </span><span class="kn">import</span> <span class="n">position</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">cast</span><span class="p">,</span>
+    <span class="n">cast_unchecked</span><span class="p">,</span>
+    <span class="n">debug_print</span><span class="p">,</span>
+    <span class="n">fval</span><span class="p">,</span>
+    <span class="n">jit</span><span class="p">,</span>
+    <span class="n">lazy</span><span class="p">,</span>
+    <span class="n">safe_select</span><span class="p">,</span>
+    <span class="n">timer</span><span class="p">,</span>
+    <span class="n">tree_at_</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.vector</span><span class="w"> </span><span class="kn">import</span> <span class="n">unitvec</span><span class="p">,</span> <span class="n">vec</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.._api</span><span class="w"> </span><span class="kn">import</span> <span class="n">Controller</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..api</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalizationBase</span><span class="p">,</span> <span class="n">localization_params</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..map</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grid</span><span class="p">,</span> <span class="n">precompute</span><span class="p">,</span> <span class="n">precomputed_map</span><span class="p">,</span> <span class="n">trace_ray</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..motion</span><span class="w"> </span><span class="kn">import</span> <span class="n">deterministic_position</span><span class="p">,</span> <span class="n">twist_t</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..priors</span><span class="w"> </span><span class="kn">import</span> <span class="n">gaussian</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..ros</span><span class="w"> </span><span class="kn">import</span> <span class="n">lidar_obs</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">deterministic_motion_params</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;localization implementation that only uses motion model&quot;&quot;&quot;</span>
+
+    <span class="n">plot_points_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">localization_params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LocalizationBase</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_deterministic_motion_tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">state</span><span class="p">(</span><span class="n">eqx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">deterministic_motion_params</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">static</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nb">map</span><span class="p">:</span> <span class="n">precomputed_map</span>
+
+    <span class="n">pos</span><span class="p">:</span> <span class="n">position</span>
+    <span class="n">noisy_pos</span><span class="p">:</span> <span class="n">gaussian</span>
+    <span class="n">rng_key</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">new_key</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rng_key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">me</span><span class="p">:</span> <span class="n">me</span><span class="o">.</span><span class="n">rng_key</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_key</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">position</span><span class="p">]):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">pose</span><span class="p">()</span>
+        <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">me</span><span class="p">:</span> <span class="n">me</span><span class="o">.</span><span class="n">pos</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">me</span><span class="p">:</span> <span class="n">me</span><span class="o">.</span><span class="n">noisy_pos</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">as_arr</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">twist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">twist_</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">twist_t</span><span class="p">],</span> <span class="n">gt_</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">plotable</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_seed</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">rng_seed</span><span class="o">=</span><span class="n">key</span><span class="p">):</span>
+            <span class="n">twist</span> <span class="o">=</span> <span class="n">twist_</span><span class="p">()</span>
+            <span class="n">gt</span> <span class="o">=</span> <span class="n">gt_</span><span class="p">()</span>
+
+            <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+            <span class="c1"># ctx += gt</span>
+
+            <span class="n">ctx</span> <span class="o">+=</span> <span class="n">position</span><span class="o">.</span><span class="n">zero</span><span class="p">()</span><span class="o">.</span><span class="n">plot_as_seg</span><span class="p">(</span><span class="n">plot_style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
+
+            <span class="c1"># ctx += self.grid.plot()</span>
+
+            <span class="n">twist_p</span> <span class="o">=</span> <span class="n">deterministic_position</span><span class="p">(</span><span class="n">twist</span><span class="p">)</span>
+            <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">pos</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">+</span> <span class="n">twist_p</span><span class="p">)</span>
+            <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">noisy_pos</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisy_pos</span><span class="o">.</span><span class="n">apply_twist</span><span class="p">(</span><span class="n">twist_p</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">plot_as_seg</span><span class="p">()</span>
+            <span class="c1"># ctx += self.noisy_pos.plot(20)</span>
+            <span class="c1"># ctx += position.from_arr(self.noisy_pos.mean).plot_as_seg(</span>
+            <span class="c1">#     plot_style(color=(1.0, 0.0, 0.0))</span>
+            <span class="c1"># )</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]]):</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_seed</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">rng_seed</span><span class="o">=</span><span class="n">key</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lidar</span><span class="p">(</span><span class="n">msg</span><span class="p">())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_computed_rays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">plotable</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pose</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">plot_one</span><span class="p">():</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">prng_key_</span><span class="p">(),</span> <span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">))]</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">trace_ray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">tran</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">rot</span><span class="o">.</span><span class="n">mul_unit</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">angle</span><span class="p">))</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dist</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">vmap_seperate_seed</span><span class="p">(</span><span class="n">plot_one</span><span class="p">,</span> <span class="n">axis_size</span><span class="o">=</span><span class="mi">50</span><span class="p">)()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]):</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">plot_points_limit</span><span class="p">)</span>
+        <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">plot_as_seg</span><span class="p">()</span>
+        <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_computed_rays</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_deterministic_motion_tracker</span><span class="p">(</span><span class="n">Controller</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">localization_params</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">deterministic_motion_params</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+
+        <span class="n">init_state</span> <span class="o">=</span> <span class="n">state</span><span class="p">(</span>
+            <span class="n">params</span><span class="p">,</span>
+            <span class="n">precompute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">),</span>
+            <span class="n">position</span><span class="o">.</span><span class="n">zero</span><span class="p">(),</span>
+            <span class="n">gaussian</span><span class="o">.</span><span class="n">from_mean_cov</span><span class="p">(</span>
+                <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+                <span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_res</span><span class="p">,</span> <span class="mf">0.1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_res</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">])),</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span> <span class="o">=</span> <span class="n">jax_jit_dispatcher</span><span class="p">(</span>
+            <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get_pose</span><span class="p">),</span>
+            <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">set_pose</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_position_ex</span><span class="p">()),</span>
+            <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">lidar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_lidar_ex</span><span class="p">()),</span>
+            <span class="n">dispatch_spec</span><span class="p">(</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">twist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_twist_ex</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot_ground_truth</span><span class="p">()</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">init_state</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get_pose</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pose</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">set_pose</span><span class="p">,</span> <span class="n">pose</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_twist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">twist</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">create</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+            <span class="n">gt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot_ground_truth</span><span class="p">()</span>
+            <span class="n">ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">twist</span><span class="p">,</span> <span class="n">twist</span><span class="p">,</span> <span class="n">gt</span><span class="p">)</span>
+            <span class="c1"># jax.block_until_ready(ctx)</span>
+            <span class="c1"># self._visualize(ctx)</span>
+            <span class="c1"># print(f&quot;deterministic_motion_tracker/twist: {t.val} seconds&quot;)</span>
+            <span class="c1"># print()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">lidar</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_visualize</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="deterministic_motion_tracker">
+<a class="viewcode-back" href="../../../index.html#liblocalization.deterministic_motion_tracker">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">deterministic_motion_tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="n">localization_params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LocalizationBase</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;localization implementation that only uses motion model&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">deterministic_motion_params</span><span class="p">()(</span><span class="n">cfg</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, rss-2025-team4.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
