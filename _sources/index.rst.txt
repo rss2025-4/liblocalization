@@ -50,5 +50,3 @@
 ############
 
 .. autofunction:: liblocalization.motion.motion_model
-
-.. autofunction:: liblocalization.sensor.ray_model
