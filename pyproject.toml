@@ -20,8 +20,15 @@ exclude = ["**/result*", ".cache"]
 typeCheckingMode = "standard"
 
 [tool.poetry.dependencies]
-# libracecar = { git = "https://github.com/rss2025-4/libracecar.git" }
-libracecar = { path = "/home/alan/6.4200/libracecar/", develop = true }
+
+# libracecar = { path = "/home/dockeruser/racecar_ws/src/libracecar/", develop = true, extras = [
+#   "jax",
+# ] }
+libracecar = { git = "https://github.com/rss2025-4/libracecar.git", extras = [
+  "jax",
+] }
+
+
 liblocalization-cpp = { git = "https://github.com/rss2025-4/liblocalization.git", subdirectory = "cpp" }
 # liblocalization-cpp = { path = "./cpp" }
 
