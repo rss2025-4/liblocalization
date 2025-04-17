@@ -389,12 +389,12 @@
         <span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">create</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
             <span class="n">ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">lidar</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span>
 
-            <span class="n">gt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ground_truth</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">gt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">update_stats</span><span class="p">,</span> <span class="n">gt</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span>
+            <span class="c1"># gt = self._ground_truth(time)</span>
+            <span class="c1"># if gt is not None:</span>
+            <span class="c1">#     self.dispatcher.process(state.update_stats, gt, obs)</span>
 
             <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;lidar: </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">val</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
+            <span class="c1"># print(f&quot;lidar: {t.val} seconds&quot;)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_visualize</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
 
 
