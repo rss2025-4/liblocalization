@@ -24,7 +24,7 @@ def main():
     node = RealNode(
         particles_params(
             plot_level=10,
-            n_particles=500,
+            n_particles=100,
             # use_motion_model=False,
             # stats_in_dir=stats_base_dir / "sim",
             stats_in_dir=None,

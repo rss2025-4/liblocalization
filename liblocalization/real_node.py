@@ -50,7 +50,7 @@ class RealNode(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tfBuffer, self)
 
         self.map_sub = self.create_subscription(
-            OccupancyGrid, "map", self.map_callback, 1
+            OccupancyGrid, "/map", self.map_callback, 1
         )
         self.odom_sub = self.create_subscription(
             Odometry, "/vesc/odom", self.odom_callback, 1
@@ -136,7 +136,6 @@ class RealNode(Node):
             controller.set_pose(t)
 
     def odom_callback(self, msg: Odometry):
-        print("odom_callback", msg.header.frame_id)
 
         if controller := self.get_controller():
             assert self.odom_transformer is not None
@@ -162,8 +161,6 @@ class RealNode(Node):
             self.do_publish()
 
     def lidar_callback(self, msg: LaserScan):
-
-        print("lidar_callback", msg.header.frame_id)
 
         # if msg.header.frame_id == "laser_model":
         #     msg.header.frame_id = "laser"

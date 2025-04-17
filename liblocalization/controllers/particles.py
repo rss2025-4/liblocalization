@@ -318,12 +318,12 @@ class _particles_model(Controller):
         with timer.create() as t:
             ctx = self.dispatcher.process(state.lidar, obs)
 
-            gt = self._ground_truth(time)
-            if gt is not None:
-                self.dispatcher.process(state.update_stats, gt, obs)
+            # gt = self._ground_truth(time)
+            # if gt is not None:
+            #     self.dispatcher.process(state.update_stats, gt, obs)
 
             jax.block_until_ready(ctx)
-            print(f"lidar: {t.val} seconds")
+            # print(f"lidar: {t.val} seconds")
             self._visualize(ctx)
 
 
