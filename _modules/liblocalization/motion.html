@@ -87,8 +87,6 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">deterministic_position</span><span class="p">(</span><span class="n">twist</span><span class="p">:</span> <span class="n">twist_t</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">position</span><span class="p">:</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">twist</span><span class="o">.</span><span class="n">linear</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
-
     <span class="c1"># ang = exp( (angular * t) * i) * linear</span>
     <span class="c1"># ang_integal = exp( (angular * t) * i) / (angular * i) * linear</span>
     <span class="c1"># ang_integal(0) = 1 / (angular * i) * linear</span>

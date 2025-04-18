@@ -78,7 +78,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">random</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.batched</span><span class="w"> </span><span class="kn">import</span> <span class="n">batched</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.jax_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">dispatch_spec</span><span class="p">,</span> <span class="n">divide_x_at_zero</span><span class="p">,</span> <span class="n">jax_jit_dispatcher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.jax_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">dispatch</span><span class="p">,</span>
+    <span class="n">dispatch_spec</span><span class="p">,</span>
+    <span class="n">divide_x_at_zero</span><span class="p">,</span>
+    <span class="n">io_callback_</span><span class="p">,</span>
+    <span class="n">jax_jit_dispatcher</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">libracecar.numpyro_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">prng_key_</span><span class="p">,</span>
     <span class="n">trunc_normal_</span><span class="p">,</span>
@@ -124,11 +130,6 @@
 
     <span class="n">pos</span><span class="p">:</span> <span class="n">position</span>
     <span class="n">noisy_pos</span><span class="p">:</span> <span class="n">gaussian</span>
-    <span class="n">rng_key</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">new_key</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rng_key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">me</span><span class="p">:</span> <span class="n">me</span><span class="o">.</span><span class="n">rng_key</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_key</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span>
@@ -139,36 +140,29 @@
         <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">me</span><span class="p">:</span> <span class="n">me</span><span class="o">.</span><span class="n">noisy_pos</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">as_arr</span><span class="p">())</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="kc">None</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">twist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">twist_</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">twist_t</span><span class="p">],</span> <span class="n">gt_</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">plotable</span><span class="p">]):</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_seed</span><span class="p">()</span>
-        <span class="k">with</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">rng_seed</span><span class="o">=</span><span class="n">key</span><span class="p">):</span>
-            <span class="n">twist</span> <span class="o">=</span> <span class="n">twist_</span><span class="p">()</span>
-            <span class="n">gt</span> <span class="o">=</span> <span class="n">gt_</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">twist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">twist_</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">twist_t</span><span class="p">]):</span>
+        <span class="n">twist</span> <span class="o">=</span> <span class="n">twist_</span><span class="p">()</span>
+        <span class="c1"># gt = gt_()</span>
 
-            <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
-            <span class="c1"># ctx += gt</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+        <span class="c1"># ctx += gt</span>
 
-            <span class="n">ctx</span> <span class="o">+=</span> <span class="n">position</span><span class="o">.</span><span class="n">zero</span><span class="p">()</span><span class="o">.</span><span class="n">plot_as_seg</span><span class="p">(</span><span class="n">plot_style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
+        <span class="n">ctx</span> <span class="o">+=</span> <span class="n">position</span><span class="o">.</span><span class="n">zero</span><span class="p">()</span><span class="o">.</span><span class="n">plot_as_seg</span><span class="p">(</span><span class="n">plot_style</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
 
-            <span class="c1"># ctx += self.grid.plot()</span>
+        <span class="c1"># ctx += self.grid.plot()</span>
 
-            <span class="n">twist_p</span> <span class="o">=</span> <span class="n">deterministic_position</span><span class="p">(</span><span class="n">twist</span><span class="p">)</span>
-            <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">pos</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">+</span> <span class="n">twist_p</span><span class="p">)</span>
-            <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span>
-                <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">noisy_pos</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisy_pos</span><span class="o">.</span><span class="n">apply_twist</span><span class="p">(</span><span class="n">twist_p</span><span class="p">)</span>
-            <span class="p">)</span>
+        <span class="n">twist_p</span> <span class="o">=</span> <span class="n">deterministic_position</span><span class="p">(</span><span class="n">twist</span><span class="p">)</span>
+        <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">pos</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">+</span> <span class="n">twist_p</span><span class="p">)</span>
+        <span class="bp">self</span> <span class="o">=</span> <span class="n">tree_at_</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">noisy_pos</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">noisy_pos</span><span class="o">.</span><span class="n">apply_twist</span><span class="p">(</span><span class="n">twist_p</span><span class="p">)</span>
+        <span class="p">)</span>
 
-            <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">plot_as_seg</span><span class="p">()</span>
-            <span class="c1"># ctx += self.noisy_pos.plot(20)</span>
-            <span class="c1"># ctx += position.from_arr(self.noisy_pos.mean).plot_as_seg(</span>
-            <span class="c1">#     plot_style(color=(1.0, 0.0, 0.0))</span>
-            <span class="c1"># )</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]]):</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_seed</span><span class="p">()</span>
-        <span class="k">with</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">rng_seed</span><span class="o">=</span><span class="n">key</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lidar</span><span class="p">(</span><span class="n">msg</span><span class="p">())</span>
+        <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">plot_as_seg</span><span class="p">()</span>
+        <span class="c1"># ctx += self.noisy_pos.plot(20)</span>
+        <span class="c1"># ctx += position.from_arr(self.noisy_pos.mean).plot_as_seg(</span>
+        <span class="c1">#     plot_style(color=(1.0, 0.0, 0.0))</span>
+        <span class="c1"># )</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_computed_rays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">plotable</span><span class="p">:</span>
         <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pose</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
@@ -179,10 +173,10 @@
 
         <span class="k">return</span> <span class="n">vmap_seperate_seed</span><span class="p">(</span><span class="n">plot_one</span><span class="p">,</span> <span class="n">axis_size</span><span class="o">=</span><span class="mi">50</span><span class="p">)()</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lidar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">lazy</span><span class="p">[</span><span class="n">batched</span><span class="p">[</span><span class="n">lidar_obs</span><span class="p">]]):</span>
         <span class="n">ctx</span> <span class="o">=</span> <span class="n">plot_ctx</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">plot_points_limit</span><span class="p">)</span>
         <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">.</span><span class="n">plot_as_seg</span><span class="p">()</span>
-        <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_computed_rays</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+        <span class="n">ctx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_computed_rays</span><span class="p">(</span><span class="n">obs</span><span class="p">())</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span>
 
 
@@ -200,12 +194,10 @@
             <span class="p">),</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span> <span class="o">=</span> <span class="n">jax_jit_dispatcher</span><span class="p">(</span>
-            <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get_pose</span><span class="p">),</span>
-            <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">set_pose</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_position_ex</span><span class="p">()),</span>
-            <span class="n">dispatch_spec</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">lidar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_lidar_ex</span><span class="p">()),</span>
-            <span class="n">dispatch_spec</span><span class="p">(</span>
-                <span class="n">state</span><span class="o">.</span><span class="n">twist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_twist_ex</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot_ground_truth</span><span class="p">()</span>
-            <span class="p">),</span>
+            <span class="n">dispatch</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">get_pose</span><span class="p">)(),</span>
+            <span class="n">dispatch</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">set_pose</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lazy_position_ex</span><span class="p">()),</span>
+            <span class="n">dispatch</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">lidar</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lazy_lidar_ex</span><span class="p">()),</span>
+            <span class="n">dispatch</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">twist</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lazy_twist_ex</span><span class="p">()),</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">init_state</span><span class="p">)</span>
 
@@ -217,8 +209,8 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_twist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">twist</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
         <span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">create</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
-            <span class="n">gt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot_ground_truth</span><span class="p">()</span>
-            <span class="n">ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">twist</span><span class="p">,</span> <span class="n">twist</span><span class="p">,</span> <span class="n">gt</span><span class="p">)</span>
+            <span class="c1"># gt = self._plot_ground_truth()</span>
+            <span class="n">ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">twist</span><span class="p">,</span> <span class="n">twist</span><span class="p">)</span>
             <span class="c1"># jax.block_until_ready(ctx)</span>
             <span class="c1"># self._visualize(ctx)</span>
             <span class="c1"># print(f&quot;deterministic_motion_tracker/twist: {t.val} seconds&quot;)</span>

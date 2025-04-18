@@ -126,10 +126,14 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">map_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_msg</span><span class="p">:</span> <span class="n">OccupancyGrid</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller_init</span><span class="p">(</span>
             <span class="n">localization_params</span><span class="p">(</span>
                 <span class="n">n_laser_points</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
                 <span class="nb">map</span><span class="o">=</span><span class="n">map_msg</span><span class="p">,</span>
+                <span class="n">map_frame</span><span class="o">=</span><span class="s2">&quot;map&quot;</span><span class="p">,</span>
+                <span class="n">laser_frame</span><span class="o">=</span><span class="s2">&quot;laser&quot;</span><span class="p">,</span>
+                <span class="n">odom_frame</span><span class="o">=</span><span class="s2">&quot;base_link&quot;</span><span class="p">,</span>
                 <span class="n">marker_callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">marker_callback</span><span class="p">,</span>
                 <span class="n">ground_truth_callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ground_truth_callback</span><span class="p">,</span>
             <span class="p">)</span>
@@ -140,6 +144,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
 
+        <span class="k">assert</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">finished_init</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">odom_transformer</span> <span class="o">=</span> <span class="n">Transformer</span><span class="p">(</span>
